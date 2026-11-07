@@ -1,0 +1,14 @@
+
+digraph P {
+  graph [rankdir=LR, bgcolor="white", pad="0.3", nodesep="0.35", ranksep="0.45", fontname="DejaVu Sans", fontsize=11];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=10, penwidth=1.1, margin="0.16,0.10"];
+  edge [color="#4B5563", arrowsize=0.7];
+  s [label="1. Select\ntarget", fillcolor="#E0F2FE", color="#0284C7"];
+  c [label="2. Snapshot\noriginal-N.elf", fillcolor="#E0F2FE", color="#0284C7"];
+  a [label="3. Analyze\nbefore", fillcolor="#ECFEFF", color="#0891B2"];
+  t [label="4. Transform\nsample copy only", fillcolor="#FEF3C7", color="#D97706"];
+  r [label="5. Reanalyze\nafter", fillcolor="#ECFEFF", color="#0891B2"];
+  d [label="6. Compare\ncontent metrics", fillcolor="#DCFCE7", color="#16A34A"];
+  e [label="7. Export\nreport + artifact", fillcolor="#F1F5F9", color="#64748B"];
+  s -> c -> a -> t -> r -> d -> e;
+}

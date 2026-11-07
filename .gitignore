@@ -1,0 +1,20 @@
+# Large project-local tools: downloaded by setup.bat or supplied as a release asset.
+tools/
+
+# Per-job snapshots, logs and reports: evidence is kept out of Git.
+runs/
+backups/
+
+# Python caches and local environments.
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local archives and editor files.
+*.zip
+*.7z
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
