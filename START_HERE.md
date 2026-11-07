@@ -91,7 +91,7 @@ Ghidra and JDK are under `tools/` in the full project.
 
 | Symptom | Check |
 |---|---|
-| “Python was not found” | Reinstall Python and enable **Add python.exe to PATH**; or run `py -3 app.py`. |
+| “Python was not found” after installing a new version | Open a new Command Prompt; run `py -0p` to list installed versions. `run.bat` now tries 3.15→3.11 explicitly. If your version is listed, run `py -3.14 app.py` (use your version). Also disable Windows **App execution aliases** for `python.exe` if they point at the Store. |
 | Browser shows connection refused | Keep `run.bat` open; wait 2 seconds; check the console for the actual port. |
 | Ghidra unavailable | Run `setup.bat` again; check `tools\windows\jdk25\bin\java.exe`; check `Java` in the app's status panel. |
 | Ghidra is slow on a large app | Select a single target, disable Ghidra for that run, or use a smaller sample. |
