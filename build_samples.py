@@ -1,12 +1,17 @@
-"""Compile the bundled sample sources into ELF files.
+"""Compile bundled self-authored C sources into native ELF or PE fixtures.
 
 Compilation is a build step; the resulting samples are not executed. The
-source profiles transform copies of these sources and rebuild them.
+source profiles transform copies of these sources and rebuild them. Inputs are
+the sources under ``samples/src`` and a compiler; outputs are ``samples/bin``
+artifacts. Compilation is allowed, but targets are never launched. Extend the
+source list here and keep the compile-only boundary.
 """
 from pathlib import Path
+import os
 import shutil
 import subprocess
 import sys
+from platform_support import local_tool_dirs, which_tool
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "samples" / "src"
@@ -23,13 +28,14 @@ SPECS = [
 
 
 def main() -> int:
-    compiler = shutil.which("gcc") or shutil.which("clang")
+    compiler = which_tool("gcc", tuple(local_tool_dirs(ROOT))) or which_tool("clang", tuple(local_tool_dirs(ROOT)))
     if not compiler:
         print("Build requires gcc or clang; no compiler was found.", file=sys.stderr)
         return 2
     OUT.mkdir(parents=True, exist_ok=True)
     for slug, description, optimization, source_files in SPECS:
-        output = OUT / f"{slug}.elf"
+        suffix = ".exe" if os.name == "nt" else ".elf"
+        output = OUT / f"{slug}{suffix}"
         command = [compiler, *FLAGS, *optimization, "-I", str(SRC / "level-5"), *map(str, source_files), "-o", str(output)]
         print(f"Building {slug}: {description}")
         try:

@@ -1,4 +1,10 @@
-"""Dependency-free UI contract tests; node exercises the real client helpers."""
+"""Dependency-free browser contract tests using Node and static HTML/JS inputs.
+
+Outputs are assertions over authorization, navigation and safe rendering. UI
+code never executes selected targets or inserts backend strings as HTML.
+Extend by checking the client contract and keeping tests independent of a live
+browser session.
+"""
 from html.parser import HTMLParser
 from pathlib import Path
 import shutil

@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Build the ReverseShield 3-day execution plan (.docx)."""
+"""Build the three-day execution plan DOCX from repository documentation.
+
+Inputs are checked-in plans and shared document helpers; output is a DOCX
+artifact. The script does not read or execute analyzed binaries. Add plan text
+and formatting here without changing application safety behavior.
+"""
 from __future__ import annotations
 
 import sys
@@ -369,7 +374,7 @@ uint32_t min = rs_min_role[resource & 3u] ^ rs_key();
         doc,
         ["Data class", "Examples in current reports", "Sanitized output"],
         [
-            ["Local identity", "`/home/fol3ds`, username, project root", "`<HOME>`, `<USER>`, `<PROJECT>`"],
+            ["Local identity", "Home directory, username, project root", "`<HOME>`, `<USER>`, `<PROJECT>`"],
             ["Tool commands", "Absolute input/output paths in `command`", "Replace only path arguments; keep tool and flags"],
             ["Demo secret", "`\"key\": \"0x9E3779B9\"`", "`<DEMO_KEY>` or omit; keep method and strength"],
             ["Personal data", "Email, IPv4/IPv6 (except 127.0.0.1), names", "`<EMAIL>`, `<IP>`"],
@@ -777,7 +782,7 @@ python3 -m venv .venv-security
     h2(doc, "A.1 Baseline and verification")
     add_code(
         doc,
-        """cd /home/fol3ds/fol3ds/personal/reverseshield-local-demo
+        """cd <PROJECT>
 python3 -m unittest discover -s tests
 python3 -m py_compile app.py analysis.py workflow.py engine.py \\
   discovery.py rpm_ingest.py demo_protection.py http_upgrade.py

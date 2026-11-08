@@ -19,7 +19,16 @@ reverse-engineering-resistance benchmark.
    MinGW-w64 into this project's `tools\` folder; no Administrator rights.
 4. Run **`run.bat`**. Open <http://127.0.0.1:8765/> if the browser does not.
 
+The setup and run scripts use the current Windows account and project-local
+folders; neither needs Administrator rights. If Ghidra or its JDK cannot be
+downloaded, static PE header parsing and any installed `objdump` remain usable;
+Ghidra is reported as unavailable and skipped. `readelf` is ELF-only and is
+explicitly marked not applicable for PE reports. Missing optional adapters are
+shown as unavailable instead of being treated as a failed target analysis.
+
 See `START_HERE.md` for troubleshooting and what works without MinGW.
+The source-only Lite archive and its exclusions are described in
+`LITE_PACKAGE.md`.
 
 ### Fedora / Linux
 
@@ -33,11 +42,32 @@ loopback, requires a per-session token for state-changing calls and rejects
 foreign origins. Stop it with `Ctrl+C`.
 
 The five sample binaries are included under `samples/bin/`. To rebuild them from
-the self-authored C sources without executing them:
+the self-authored C sources without executing them, run:
 
 ```bash
 python3 build_samples.py
 ```
+
+The build emits ELF fixtures on Linux and `.exe` PE fixtures on Windows; the
+sample catalog detects the actual format from file headers.
+
+## Windows test commands
+
+Run the project tests from a Command Prompt in the extracted project folder:
+
+```bat
+python -m unittest discover -s tests -v
+set RUN_GHIDRA_TESTS=1
+python -m unittest tests.test_engine -v
+```
+
+The first command includes the Windows PE upload and directory-walker checks.
+The second enables the real headless Ghidra smoke test. In PowerShell, set the
+opt-in for the current shell with `$env:RUN_GHIDRA_TESTS = "1"` before running
+`python -m unittest tests.test_engine -v`.
+
+GitHub Actions also runs the regular suite on Windows and Fedora; the Ghidra
+smoke remains opt-in because it requires a separate local tool installation.
 
 ## What the workbench does
 
@@ -102,10 +132,12 @@ owner provides an offline release asset.
 python3 -m unittest discover -s tests -v
 ```
 
-On Windows use `py -3` instead of `python3`. The current suite has **58 tests, 1
-opt-in Ghidra skip**. Tests cover ELF/PE parsing, discovery, RPM ingestion, job
-orchestration, comparison, API and UI contracts. They do not execute the sample
-programs. The real Ghidra test is opt-in:
+On Windows use `py -3` instead of `python3`. The recorded Day 1 Windows run
+completed **65 tests: 48 passed, 17 skipped, 0 failed** with project tool
+bundles available; the Ghidra opt-in run completed **7 tests: 7 passed**. Counts
+can vary when optional tools are missing. Tests cover ELF/PE parsing, discovery,
+RPM ingestion, job orchestration, comparison, API and UI contracts. They do not
+execute the sample programs. The real Ghidra test is opt-in:
 
 ```bash
 RUN_GHIDRA_TESTS=1 python3 -m unittest tests.test_engine -v

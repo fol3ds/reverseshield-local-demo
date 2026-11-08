@@ -1,8 +1,10 @@
 """Read-only target discovery for Flatpak, folders, ELF/PE files and RPM.
 
-Discovery returns metadata and absolute paths; it never launches a discovered
-file. POSIX uses descriptor-relative walking; Windows uses a portable os.walk
-fallback. Keep both paths in sync when adding new target formats.
+Inputs are local paths and, on Linux, Flatpak/RPM metadata; outputs are bounded
+target records and scan diagnostics. Discovery returns metadata and absolute
+paths; it never launches a discovered file. POSIX uses descriptor-relative
+walking; Windows uses a portable os.walk fallback. Keep both paths in sync
+when adding target formats or platform-specific sources.
 """
 from __future__ import annotations
 
@@ -108,11 +110,17 @@ def _scan_directory_windows(root: str | Path, max_file_bytes: int = MAX_FILE_BYT
     for dirpath, dirnames, filenames in os.walk(base, topdown=True, followlinks=False):
         kept_names = []
         for name in dirnames:
+            visited += 1
+            if visited > MAX_SCAN_FILES:
+                raise ValueError(f"Directory scan exceeded the {MAX_SCAN_FILES:,}-entry safety limit.")
             if name.startswith(".") or name in EXCLUDED_DIRECTORIES:
                 excluded += 1
                 continue
             candidate = Path(dirpath) / name
             if candidate.is_symlink():
+                excluded += 1
+                continue
+            if (candidate / "pyvenv.cfg").is_file():
                 excluded += 1
                 continue
             kept_names.append(name)

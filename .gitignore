@@ -13,8 +13,17 @@ venv/
 
 # Local archives and editor files.
 *.zip
+ReverseShield_Lite_Windows_Day1.zip.sha256
 *.7z
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+~$*.docx
+
+# Generated submission documents contain workspace-specific report evidence;
+# rebuild from the sanitized source before sharing them.
+docs/ReverseShield_3-Day_Execution_Plan.docx
+docs/ReverseShield_3-Day_Execution_Plan.pdf
+docs/ReverseShield_Project_Report_and_Plan.docx
+docs/ReverseShield_Project_Report_and_Plan.pdf

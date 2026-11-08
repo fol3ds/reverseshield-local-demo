@@ -1,3 +1,9 @@
+"""Tests for local path discovery and mocked Linux package metadata.
+
+Inputs are temporary directory trees and inert executable headers; outputs are
+target records and scan diagnostics. No discovered file is launched. Extend
+with platform-specific walkers and explicit capability-based skips.
+"""
 import os
 import tempfile
 import unittest
@@ -7,6 +13,7 @@ from unittest.mock import patch
 import discovery
 
 
+@unittest.skipIf(os.name == "nt", "Flatpak discovery is Linux-only")
 class FlatpakDiscoveryTests(unittest.TestCase):
     def test_parse_flatpak_list_preserves_application_metadata(self):
         raw = "com.example.Editor\tExample Editor\t2.4.1\tstable\tsystem\n"
@@ -88,6 +95,7 @@ class FlatpakDiscoveryTests(unittest.TestCase):
 
 
 class PathDiscoveryTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX descriptor-relative symlink race is not a Windows path")
     def test_file_replaced_by_symlink_at_open_is_never_read(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "root"
@@ -130,6 +138,7 @@ class PathDiscoveryTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "safety limit"):
                     discovery.discover_path(root, workspace=root / "work")
 
+    @unittest.skipIf(os.name == "nt", "Windows ACL permissions are not changed by chmod(0)")
     def test_unreadable_directory_is_reported_as_partial(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

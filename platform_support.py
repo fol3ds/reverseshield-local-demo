@@ -1,8 +1,11 @@
-"""Small cross-platform helpers used by the ReverseShield workbench.
+"""Cross-platform process and permission helpers for the workbench.
 
 The workbench is developed on Fedora but is expected to run natively on
-Windows for the team hand-off. Keep OS-specific details here instead of
-scattering ``os.name`` checks through the analysis code.
+Windows for the team hand-off. Inputs are tool names, paths and analysis-tool
+processes; outputs are platform-appropriate argv, process flags, tool paths and
+permission behavior. These helpers launch analysis tools only, never selected
+targets. Add OS differences here instead of scattering checks through analysis
+code.
 """
 from __future__ import annotations
 

@@ -1,4 +1,10 @@
-"""Analyzer tests execute inspection tools, never the selected ELF."""
+"""Test bounded process adapters and reports for inert ELF/PE fixture files.
+
+The child processes are test probes or static-inspection tools; the selected
+target is never executed. Inputs are fixture paths and tool selections; outputs
+are bounded report and event assertions. Extend through fake processes or
+static analyzers only.
+"""
 import hashlib
 import importlib
 import json
@@ -83,12 +89,18 @@ class EngineTests(unittest.TestCase):
 
     def test_lightweight_adapters_produce_real_disassembly_strings_and_symbols(self):
         engine = engine_module()
-        reports = {name: engine.analyze(SAMPLE, tools=[name]) for name in ("file", "objdump", "strings", "nm")}
+        requested = ("file", "objdump", "strings", "nm")
+        reports = {name: engine.analyze(SAMPLE, tools=[name]) for name in requested
+                   if engine.inventory()[name]["available"]}
+        self.assertIn("objdump", reports)
+        self.assertIn("strings", reports)
+        self.assertIn("nm", reports)
         for name, report in reports.items():
             self.assertEqual([t["tool"] for t in report["tools"]], [name])
             self.assertEqual(report["tools"][0]["status"], "ok")
             self.assertTrue(report["tools"][0]["output"])
-        self.assertIn("ELF", reports["file"]["metadata"]["file_type"])
+        if "file" in reports:
+            self.assertIn("ELF", reports["file"]["metadata"]["file_type"])
         self.assertIn("<main>", reports["objdump"]["tools"][0]["output"])
         self.assertIn("main", [f["name"] for f in reports["objdump"]["artifacts"]["functions"]])
         self.assertTrue(reports["objdump"]["artifacts"]["call_edges"])
@@ -104,7 +116,8 @@ class EngineTests(unittest.TestCase):
         report = engine.analyze(SAMPLE, emit=events.append, workdir=base)
         base.mkdir(parents=True, exist_ok=True)
         (base / "last-report.json").write_text(json.dumps(report, indent=2))
-        self.assertEqual({t["tool"] for t in report["tools"]}, set(engine.inventory()))
+        available_tools = {name for name, item in engine.inventory().items() if item["available"]}
+        self.assertEqual({t["tool"] for t in report["tools"]}, available_tools)
         ghidra = next(t for t in report["tools"] if t["tool"] == "ghidra_headless")
         self.assertEqual(ghidra["status"], "ok", ghidra["output"][-10000:])
         self.assertIn("-deleteProject", ghidra["command"])
@@ -141,7 +154,10 @@ class EngineTests(unittest.TestCase):
             self.assertIn("version", item)
             self.assertIn("path", item)
             if name != "ghidra_headless":
-                self.assertEqual(item["available"], shutil.which(name) is not None)
+                self.assertEqual(item["available"], engine_module().which_tool(name, tuple(
+                    path for path in (ROOT / "tools/windows/mingw64/bin", ROOT / "tools/windows/w64devkit/bin",
+                                      ROOT / "tools/windows/binutils/bin", ROOT / "tools/jdk25/bin")
+                    if path.is_dir())) is not None)
             if item["available"]:
                 self.assertTrue(Path(item["path"]).is_file())
                 self.assertTrue(item["version"])

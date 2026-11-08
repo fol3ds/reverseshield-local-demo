@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Build the ReverseShield project report and submission plan (.docx)."""
+"""Build the project report DOCX from checked-in text and document helpers.
+
+Inputs are repository documentation and a writable output directory; output
+is a DOCX artifact. This script does not read or execute analyzed targets.
+Extend the report sections here and keep generated deliverables out of source
+inputs unless explicitly reviewed.
+"""
 from __future__ import annotations
 
 import sys
@@ -853,7 +859,7 @@ return 0;
     para(
         doc,
         "The current reports are evidence-rich and share-hostile. A scan of the Level 5 strip report found **238 occurrences of "
-        "`/home/fol3ds`** across commands and logs; the demo-protection report contains the demo key in `protection.key`, plus "
+        "many home-directory paths across commands and logs; the demo-protection report contains the demo key in `protection.key`, plus "
         "source paths, Ghidra logs, and CA paths. The submission must separate the internal raw report from the shareable "
         "sanitized report.",
     )

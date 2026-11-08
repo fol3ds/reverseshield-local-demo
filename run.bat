@@ -22,7 +22,7 @@ if not errorlevel 1 (
 if not defined PYTHON call :try_python
 if not defined PYTHON goto :badpython
 
-start "" /b powershell -NoProfile -WindowStyle Hidden -Command "Start-Sleep -Seconds 2; Start-Process 'http://127.0.0.1:8765/'"
+start "" /b powershell -NoProfile -WindowStyle Hidden -Command "Start-Sleep -Seconds 2; try { Start-Process 'http://127.0.0.1:8765/' -ErrorAction Stop } catch { Write-Output 'Browser could not be opened automatically. Visit http://127.0.0.1:8765/ in your browser.' }"
 %PYTHON% app.py
 goto :end
 

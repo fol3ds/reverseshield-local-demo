@@ -1,4 +1,11 @@
-"""Local ELF inspection adapters. Targets are data, never executed."""
+"""Bounded static adapters for ELF and PE inputs.
+
+Inputs are validated file snapshots and selected tool names; outputs are
+structured reports, artifacts and streamed progress events. Tools inspect
+target bytes as data; the selected target is never executed, mapped or
+emulated. Extend through argv-only adapters, bounded parsers and inventory
+entries, with explicit format skips for tools such as ELF-only ``readelf``.
+"""
 from __future__ import annotations
 
 import codecs
@@ -144,9 +151,18 @@ def inventory() -> dict:
             candidates = []
             if os.environ.get("GHIDRA_HOME"):
                 home = Path(os.environ["GHIDRA_HOME"]) / "support"
-                candidates.extend([home / "analyzeHeadless", home / "analyzeHeadless.bat"])
-            for pattern in ("*/support/analyzeHeadless", "*/support/analyzeHeadless.bat"):
+                if IS_WINDOWS:
+                    candidates.extend([home / "analyzeHeadless.bat", home / "analyzeHeadless"])
+                else:
+                    candidates.extend([home / "analyzeHeadless", home / "analyzeHeadless.bat"])
+            patterns = (("*/support/analyzeHeadless.bat", "*/support/analyzeHeadless") if IS_WINDOWS
+                        else ("*/support/analyzeHeadless", "*/support/analyzeHeadless.bat"))
+            for pattern in patterns:
                 candidates.extend(sorted((ROOT / "tools/ghidra").glob(pattern), reverse=True))
+            if IS_WINDOWS and path and not path.lower().endswith((".bat", ".cmd", ".exe")):
+                batch_path = Path(path + ".bat")
+                if batch_path.is_file():
+                    path = str(batch_path)
             if not path:
                 path = next((str(p) for p in candidates if p.is_file()), None)
             if path:
@@ -177,8 +193,8 @@ CALL_EDGE_LIMIT = 10000
 GHIDRA_TIMEOUT = 240
 
 
-def _ghidra_environment():
-    """Use a project-local JDK when available; never install anything."""
+def _ghidra_environment(workdir=None):
+    """Use a project-local JDK and writable per-run Ghidra profile."""
     env = {**os.environ, "LC_ALL": "C"}
     candidates = [ROOT / "tools/jdk25", ROOT / "tools/windows/jdk25"]
     for jdk in candidates:
@@ -187,6 +203,14 @@ def _ghidra_environment():
             env["JAVA_HOME"] = str(jdk)
             env["PATH"] = str(jdk / "bin") + os.pathsep + env.get("PATH", "")
             break
+    if IS_WINDOWS and workdir is not None:
+        profile = Path(workdir) / "ghidra-user-profile"
+        roaming = profile / "Roaming"
+        local = profile / "Local"
+        roaming.mkdir(parents=True, exist_ok=True)
+        local.mkdir(parents=True, exist_ok=True)
+        env["APPDATA"] = str(roaming)
+        env["LOCALAPPDATA"] = str(local)
     return env
 
 
@@ -194,7 +218,7 @@ def _analyze_ghidra(target, *, workdir, emit=None, cancel_event=None, info=None)
     """Run bounded Ghidra headless import and export static artifacts as JSON."""
     import json
     import tempfile
-    workdir = Path(workdir or tempfile.mkdtemp(prefix="engine-", dir=ROOT / "runs"))
+    workdir = Path(workdir or tempfile.mkdtemp(prefix="engine-", dir=ROOT / "runs")).resolve()
     workdir.mkdir(parents=True, exist_ok=True, mode=0o700)
     project = workdir / "ghidra_project"
     project.mkdir(mode=0o700, exist_ok=True)
@@ -210,7 +234,7 @@ def _analyze_ghidra(target, *, workdir, emit=None, cancel_event=None, info=None)
     )
     record = _run("ghidra_headless", command, label=info["label"], version=info["version"],
                   emit=emit, cancel_event=cancel_event, timeout=GHIDRA_TIMEOUT,
-                  env=_ghidra_environment(), cwd=str(workdir))
+                  env=_ghidra_environment(workdir), cwd=str(workdir))
     record["timeout_seconds"] = GHIDRA_TIMEOUT
     record["work_directory"] = str(workdir)
     payload, coverage, limitations = {}, {}, []

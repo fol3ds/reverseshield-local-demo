@@ -99,14 +99,28 @@ if (-not $SkipCompiler) {
 }
 
 # 4) Verify Python. The app itself uses only the standard library.
-$py = Get-Command py -ErrorAction SilentlyContinue
-if (-not $py) { $py = Get-Command python -ErrorAction SilentlyContinue }
-if (-not $py) {
+$pythonCommand = $null
+foreach ($candidate in @((Get-Command py -ErrorAction SilentlyContinue),
+                         (Get-Command python -ErrorAction SilentlyContinue))) {
+    if (-not $candidate) { continue }
+    try {
+        $versionText = & $candidate.Source --version 2>&1
+        if ($LASTEXITCODE -eq 0 -and $versionText -match 'Python\s+(\d+)\.(\d+)') {
+            if ([int]$Matches[1] -gt 3 -or ([int]$Matches[1] -eq 3 -and [int]$Matches[2] -ge 11)) {
+                $pythonCommand = $candidate.Source
+                break
+            }
+        }
+    } catch {
+        # A launcher may be present but blocked or stale; try the next candidate.
+    }
+}
+if (-not $pythonCommand) {
     throw "Python 3.11+ was not found. Install it from python.org and enable 'Add python.exe to PATH'."
 }
-Write-Host "Python: $(& $py.Source --version 2>&1)"
+Write-Host "Python: $versionText"
 
 Write-Host ""
 Write-Host "Setup complete."
 Write-Host "Next: run run.bat; the browser should open http://127.0.0.1:8765/"
-Write-Host "Optional test suite: $($py.Source) -m unittest discover -s tests -v"
+Write-Host "Optional test suite: $pythonCommand -m unittest discover -s tests -v"

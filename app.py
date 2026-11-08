@@ -4,7 +4,10 @@ The server is loopback-only. It serves the workbench UI and a legacy metadata
 API; the upgraded JSON API lives in ``http_upgrade.py``. Static analysis tools
 read target bytes as data; the selected target is never executed.
 
-For architecture, invariants and extension notes read ``docs/AI_CONTEXT.md``.
+Inputs are loopback HTTP requests and local files; outputs are static JSON or
+the browser UI. Uploaded bytes are bounded and never executed. Extend routes
+through ``http_upgrade.py`` where possible and keep legacy ELF-only behavior
+clearly separated from PE-capable APIs.
 """
 from __future__ import annotations
 

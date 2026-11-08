@@ -1,6 +1,12 @@
-"""Workbench-only tests: never execute a target ELF."""
+"""Test asynchronous selection, snapshot, report and transformation workflows.
+
+Inputs are temporary fixture files and injected analyzer responses; outputs
+are checked job states and report data. Neither a target ELF nor PE is
+executed. Extend using fake analyzers or static tools only.
+"""
 import hashlib
 import importlib.util
+import os
 import tempfile
 import threading
 import time
@@ -39,16 +45,13 @@ class ComparisonTests(unittest.TestCase):
 
 
 def static_baseline(path, **kwargs):
-    from analysis import analyze_elf
-    callback = kwargs.get('emit')
-    if callback:
-        callback({'type': 'tool_start', 'tool': 'readelf', 'message': 'Reading ELF metadata'})
-    return analyze_elf(path, detail='full')
+    from engine import analyze
+    return analyze(path, **kwargs)
 
 
 def inventory_baseline():
-    from analysis import tool_inventory
-    return tool_inventory()
+    from engine import inventory
+    return inventory()
 
 
 class JobTests(unittest.TestCase):
@@ -71,11 +74,13 @@ class JobTests(unittest.TestCase):
                 self.assertEqual(result['protection']['strength'], 'demonstration_only')
                 self.assertFalse(result['protection']['behavior_verified'])
                 self.assertNotEqual(result['before']['sha256'], result['after']['sha256'])
-                self.assertEqual(result['after']['metadata']['class'], 'ELF64')
+                expected_class = 'PE32+' if os.name == 'nt' else 'ELF64'
+                self.assertEqual(result['after']['metadata']['class'], expected_class)
                 self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(), digest)
                 artifact = service.artifact_path(job)
                 self.assertTrue(artifact.is_file())
-                self.assertEqual(artifact.stat().st_mode & 0o111, 0)
+                if os.name != 'nt':
+                    self.assertEqual(artifact.stat().st_mode & 0o111, 0)
             finally:
                 service.close()
 
@@ -155,7 +160,8 @@ class JobTests(unittest.TestCase):
                 self.assertEqual(record['status'], 'failed')
                 self.assertIsNotNone(record['result'], 'A failed reanalysis must not discard baseline evidence')
                 self.assertEqual(record['result']['protection']['state'], 'symbol_removal_applied')
-                self.assertEqual(record['result']['before']['metadata']['class'], 'ELF64')
+                expected_class = 'PE32+' if target.read_bytes()[:2] == b'MZ' else 'ELF64'
+                self.assertEqual(record['result']['before']['metadata']['class'], expected_class)
                 self.assertIsNone(record['result']['after'])
             finally:
                 service.close()
@@ -226,7 +232,8 @@ class JobTests(unittest.TestCase):
             service.wait(job_id, timeout=10)
             result = service.get_job(job_id)
             self.assertEqual(result['status'], 'completed')
-            self.assertEqual(result['result']['reports'][0]['analysis']['metadata']['class'], 'ELF64')
+            expected_class = 'PE32+' if target.read_bytes()[:2] == b'MZ' else 'ELF64'
+            self.assertEqual(result['result']['reports'][0]['analysis']['metadata']['class'], expected_class)
             self.assertEqual(service.get_job(job_id, after=result['next_seq'])['events'], [])
             self.assertTrue(service.report_path(job_id).is_file())
             self.assertEqual(hashlib.sha256(target.read_bytes()).hexdigest(), digest)
