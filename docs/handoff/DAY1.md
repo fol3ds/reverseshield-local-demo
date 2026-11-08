@@ -107,9 +107,7 @@ branch or Lite ZIP. No selected target was executed.
   large tool downloads; loopback HTTP requests from this environment were denied.
 - The opt-in RPM package integration test was skipped because `rpmbuild`,
   `rpm2cpio` and a native Linux build toolchain are unavailable on Windows.
-- The supplied generated DOCX/PDF report and plan contain an absolute home
-  directory in their evidence text. Existing tracked copies were not changed or
-  The two DOCX files were regenerated from sanitized builders, and text-level
+- The two DOCX files were regenerated from sanitized builders, and text-level
   extraction found no home-directory path. Their visual layout could not be
   checked because LibreOffice is unavailable and Word UI automation failed.
   The two tracked PDFs remain unchanged and still contain an absolute home
