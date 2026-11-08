@@ -7,6 +7,25 @@
 - PR: not opened. The Day 1 commit is pushed to `origin/Day-1---Nasser`.
 - Date (Riyadh): 8 November 2026
 
+## Day 1 task checklist
+
+- [x] **D1-01 — Windows setup and first run:** non-admin setup, app startup,
+  Level 5 Ghidra analysis, and missing-tool/browser fallback documented.
+- [x] **D1-02 — PE acceptance:** fixture upload/report and real Notepad discovery
+  validated; static analysis, hash and no-execution claim checked.
+- [x] **D1-03 — Windows tests:** platform-specific skips and PE walker coverage
+  added; full Windows and opt-in Ghidra counts recorded below.
+- [x] **D1-04 — AI-readable docs:** Python module docstrings, C sample headers,
+  JavaScript section map/safety rule, AI context and README requirements met.
+  Generated DOCX/PDF copies contain no workstation username path.
+- [~] **D1-05 — Lite ZIP:** archive, required files, exclusions, size and digest
+  verified. The extracted app UI and status endpoint work; clean setup could not
+  download Ghidra because this environment cannot resolve GitHub (see blockers).
+- [x] **D1-06 — Event draft:** placeholder answers and supporting-file list added;
+  no sensitive identity or contact data is included.
+- [x] **D1-07 — Handoff:** status, tests, metrics, issues and Day 2 actions
+  recorded; commits pushed to the requested branch. No PR was requested/opened.
+
 ## What changed
 
 - Windows setup now falls back from an unusable `py.exe` to a working Python
@@ -46,9 +65,10 @@
 - [x] PE `objdump` analysis succeeded; `readelf` was recorded as `skipped` for
   PE/COFF. No `WinError`, `FileNotFoundError` or “not ELF” rejection occurred in
   the PE upload flow.
-- [x] The Lite ZIP extracted into a fresh directory and the app process started
-  from that extracted tree. This environment denied loopback HTTP requests, so
-  the fresh-copy status/UI endpoint check could not be completed here.
+- [x] The Lite ZIP extracted into a fresh directory; `run.bat` started from that
+  tree, `/api/status` reported `static_only`, and the UI returned HTTP 200. The
+  browser opener displayed its manual-URL fallback. Fresh-copy setup is partial
+  because GitHub DNS resolution blocked optional tool downloads.
 
 ## Tests run
 
@@ -77,11 +97,11 @@ branch or Lite ZIP. No selected target was executed.
 
 - File: `ReverseShield_Lite_Windows_Day1.zip` (created by
   `scripts/package_lite_windows.py`)
-- Size: **753,787 bytes**
-- SHA-256: **`e0526bfa1eefe741cbaf4166fa2cbf1ed95f70455076ea0d6d0baaedc91430d2`**
+- Size: **753,717 bytes**
+- SHA-256: **`8712be584ffadb646fe341630afddab51a266161e5c0a225228e441089e39d6c`**
 - The builder was run twice with identical size and digest. A detached
   `ReverseShield_Lite_Windows_Day1.zip.sha256` file is written beside the ZIP.
-- Contents: 78 entries under a stable `reverseshield-local-demo/` directory;
+- Contents: 77 entries under a stable `reverseshield-local-demo/` directory;
   no `tools/`, `runs/`, `backups/`, `.git/` or
   `__pycache__/` entries. The generated workspace-specific DOCX/PDF reports
   are excluded. This
@@ -102,18 +122,21 @@ branch or Lite ZIP. No selected target was executed.
   `python.exe` and succeeded with Python 3.15.2.
 - The app server started, but automatic browser launch was blocked by the
   execution environment. The safe fallback is to open the loopback URL manually.
-- The fresh Lite extraction omits local tool bundles by design. Its app process
-  started, but `setup.bat` was not rerun from that tree because it could trigger
-  large tool downloads; loopback HTTP requests from this environment were denied.
+- In a fresh Lite extraction, `setup.bat` was run without Administrator rights.
+  It reached the Ghidra download, then failed because this environment could not
+  resolve `github.com`; it reported the error and did not silently continue. The
+  extracted `run.bat` still started the app, and `/api/status` returned
+  `static_only` with dynamic analysis disabled; the UI returned HTTP 200. The
+  browser opener was denied, so use the displayed loopback URL. Re-run setup on a
+  network-connected Windows host to install project-local Ghidra/JDK/MinGW.
 - The opt-in RPM package integration test was skipped because `rpmbuild`,
   `rpm2cpio` and a native Linux build toolchain are unavailable on Windows.
-- The two DOCX files were regenerated from sanitized builders, and text-level
-  extraction found no home-directory path. Their visual layout could not be
-  checked because LibreOffice is unavailable and Word UI automation failed.
-  The two tracked PDFs remain unchanged and still contain an absolute home
-  directory in extracted evidence text. All four generated reports are excluded
-  from the Lite ZIP. Do not share the PDFs; re-export sanitized copies, then
-  visually inspect them before event submission.
+- The two DOCX files were regenerated from sanitized builders; text extraction
+  found no workstation username path. The two PDFs were sanitized by replacing
+  the affected pages with reviewed raster pages; text extraction confirms the
+  username path is absent. Those pages are image-based and are not searchable;
+  the remaining pages retain selectable text. LibreOffice and Word export were
+  unavailable. All four generated reports are excluded from the Lite ZIP.
 - No PR was opened. Open one from `Day-1---Nasser` if these changes should be
   merged into `main`.
 

@@ -132,10 +132,12 @@ owner provides an offline release asset.
 python3 -m unittest discover -s tests -v
 ```
 
-On Windows use `py -3` instead of `python3`. The current suite has **58 tests, 1
-opt-in Ghidra skip**. Tests cover ELF/PE parsing, discovery, RPM ingestion, job
-orchestration, comparison, API and UI contracts. They do not execute the sample
-programs. The real Ghidra test is opt-in:
+On Windows use `py -3` instead of `python3`. The recorded Day 1 Windows run
+completed **65 tests: 48 passed, 17 skipped, 0 failed** with project tool
+bundles available; the Ghidra opt-in run completed **7 tests: 7 passed**. Counts
+can vary when optional tools are missing. Tests cover ELF/PE parsing, discovery,
+RPM ingestion, job orchestration, comparison, API and UI contracts. They do not
+execute the sample programs. The real Ghidra test is opt-in:
 
 ```bash
 RUN_GHIDRA_TESTS=1 python3 -m unittest tests.test_engine -v

@@ -50,10 +50,10 @@ analysis accuracy and evidence quality.
 
 ## Supporting files and links
 
-- Project report PDF: **[Regenerate from `docs/build_report.py` and export a
-  sanitized PDF before submission.]**
-- Execution plan PDF: **[Regenerate from `docs/build_plan.py` and export a
-  sanitized PDF before submission.]**
+- Project report PDF: `docs/ReverseShield_Project_Report_and_Plan.pdf` (sanitized;
+  owner review required before submission).
+- Execution plan PDF: `docs/ReverseShield_3-Day_Execution_Plan.pdf` (sanitized;
+  owner review required before submission).
 - Demo video: **[2–3 minute video link to be added after recording.]**
 - Repository or Lite release: **[Owner to add the approved repository/release link.]**
 - Optional source package: `ReverseShield_Lite_Windows_Day1.zip` (size and
@@ -65,9 +65,11 @@ analysis accuracy and evidence quality.
   founders and may have up to four people; a representative must present if
   selected; finalists attend in person; application materials are in English;
   IP remains with original rights holders subject to the Terms & Conditions.
-- Official source: <https://iscybernext.com/en>. Recheck the live Terms &
-  Conditions and confirm eligibility, attendance availability, and the actual
-  discovery source before submission.
+- Official source: <https://iscybernext.com/en>. As checked on 8 November
+  2026, registration closes 12 November 2026; the finalist stage is 1–3 December
+  2026 in Riyadh. The FAQ allows individual or founder teams up to four, and
+  finalists must attend in person. Recheck the live Terms & Conditions,
+  eligibility, attendance availability, and discovery source before submission.
 - Confirm the actual discovery source and final participation details.
 - Confirm current dates and eligibility again before submission.
 - Replace placeholders only in the official event form or an approved shared
