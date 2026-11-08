@@ -44,8 +44,8 @@
 - Added module docstrings, C sample source headers, the workbench.js section map
   and the “never use innerHTML” rule. Updated the Windows quick start and
   AI context guide.
-- Added the event application draft, a Lite package manifest, and a reproducible
-  ZIP builder that writes a detached SHA-256 sidecar.
+- Added the event application draft, a Lite package manifest, a reproducible ZIP
+  builder with a detached SHA-256 sidecar, and this AI-readable Day 1 handoff.
 
 ## What works
 
@@ -97,11 +97,11 @@ branch or Lite ZIP. No selected target was executed.
 
 - File: `ReverseShield_Lite_Windows_Day1.zip` (created by
   `scripts/package_lite_windows.py`)
-- Size: **753,717 bytes**
-- SHA-256: **`8712be584ffadb646fe341630afddab51a266161e5c0a225228e441089e39d6c`**
+- Size: **757,671 bytes**
+- SHA-256: **`972e969c52a9dfa00187c6fed480b8cd62fea04cba3983dafd0bc11b5402304f`**
 - The builder was run twice with identical size and digest. A detached
   `ReverseShield_Lite_Windows_Day1.zip.sha256` file is written beside the ZIP.
-- Contents: 77 entries under a stable `reverseshield-local-demo/` directory;
+- Contents: 78 entries under a stable `reverseshield-local-demo/` directory;
   no `tools/`, `runs/`, `backups/`, `.git/` or
   `__pycache__/` entries. The generated workspace-specific DOCX/PDF reports
   are excluded. This
