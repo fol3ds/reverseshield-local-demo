@@ -1,9 +1,10 @@
 """Create the reproducible, tools-free Windows Day 1 source archive.
 
 Inputs are the current repository tree and the fixed output filename; output is
-``ReverseShield_Lite_Windows_Day1.zip`` in the repository root, with a stable
-``reverseshield-local-demo`` top-level directory regardless of checkout name. Build tools,
-run evidence, backups, VCS metadata and Python caches are excluded. The script
+``ReverseShield_Lite_Windows_Day1.zip`` plus a detached ``.sha256`` file in the
+repository root, with a stable ``reverseshield-local-demo`` top-level directory
+regardless of checkout name. Build tools, run evidence, backups, VCS metadata
+and Python caches are excluded. The script
 only reads source files and writes the archive; it never opens or executes a
 selected analysis target. Add exclusion rules here when new local-only data
 directories are introduced.
@@ -18,6 +19,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "ReverseShield_Lite_Windows_Day1.zip"
+CHECKSUM_OUTPUT = ROOT / "ReverseShield_Lite_Windows_Day1.zip.sha256"
 ARCHIVE_ROOT_NAME = "reverseshield-local-demo"
 EXCLUDED_DIRECTORIES = {"tools", "runs", "backups", ".git", "__pycache__"}
 EXCLUDED_FILES = {
@@ -38,7 +40,11 @@ def source_files():
         for filename in filenames:
             path = Path(directory) / filename
             relative = path.relative_to(ROOT).as_posix().casefold()
-            if path.resolve() == OUTPUT.resolve() or path.is_symlink() or relative in EXCLUDED_FILES:
+            if (
+                path.resolve() in {OUTPUT.resolve(), CHECKSUM_OUTPUT.resolve()}
+                or path.is_symlink()
+                or relative in EXCLUDED_FILES
+            ):
                 continue
             yield path
 
@@ -70,7 +76,10 @@ def main() -> int:
             )
     print(f"Output: {OUTPUT.name}")
     print(f"Size: {OUTPUT.stat().st_size} bytes")
-    print(f"SHA-256: {sha256(OUTPUT)}")
+    checksum = sha256(OUTPUT)
+    CHECKSUM_OUTPUT.write_text(f"{checksum}  {OUTPUT.name}\n", encoding="ascii")
+    print(f"SHA-256: {checksum}")
+    print(f"Checksum file: {CHECKSUM_OUTPUT.name}")
     return 0
 
 

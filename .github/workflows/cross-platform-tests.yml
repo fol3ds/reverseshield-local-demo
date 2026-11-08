@@ -1,0 +1,41 @@
+name: Cross-platform tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-binutils mingw-w64-x86_64-gcc
+      - name: Run Windows suite
+        shell: pwsh
+        run: |
+          $mingw = 'C:\msys64\mingw64\bin'
+          if (Test-Path $mingw) { $env:PATH = "$mingw;$env:PATH" }
+          python -m unittest discover -s tests -v
+
+  fedora:
+    name: Fedora tests
+    runs-on: ubuntu-latest
+    container: fedora:43
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test dependencies
+        run: dnf -y install python3 gcc binutils file flatpak rpm rpm-build cpio
+      - name: Run Fedora suite
+        run: python3 -m unittest discover -s tests -v

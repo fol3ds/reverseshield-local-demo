@@ -20,10 +20,13 @@
 - Windows directory walking counts files and directories, skips virtual
   environments and preserves scan limits. Tests now skip Linux-only API,
   Flatpak, POSIX descriptor and chmod assumptions with explicit reasons.
-- Added PE upload/report and Windows walker tests. Added module docstrings,
-  sample source headers, the workbench.js section map and the “never use
-  innerHTML” rule. Updated the Windows quick start and AI context guide.
-- Added the event application draft and the ZIP packaging script.
+- Added PE upload/report, Windows directory walker, and bounded malformed-header
+  tests. Added Windows/Fedora GitHub Actions jobs.
+- Added module docstrings, C sample source headers, the workbench.js section map
+  and the “never use innerHTML” rule. Updated the Windows quick start and
+  AI context guide.
+- Added the event application draft, a Lite package manifest, and a reproducible
+  ZIP builder that writes a detached SHA-256 sidecar.
 
 ## What works
 
@@ -51,7 +54,7 @@
 
 ```text
 python -m unittest discover -s tests -v
-Ran 60 tests: 43 passed, 0 failed, 17 skipped.
+Ran 65 tests: 48 passed, 0 failed, 17 skipped.
 Skip reasons: 8 legacy ELF/Flatpak API cases; 5 Flatpak-only cases; 2 POSIX
 symlink-race/permission cases; 1 opt-in Ghidra test; 1 missing RPM fixture-tool
 set. Windows PE upload and directory-walker tests passed.
@@ -74,9 +77,11 @@ branch or Lite ZIP. No selected target was executed.
 
 - File: `ReverseShield_Lite_Windows_Day1.zip` (created by
   `scripts/package_lite_windows.py`)
-- Size: **751,068 bytes**
-- SHA-256: **`80101fee76b794c7d0aae6c2340e23e078a8da2b4cbfd3d83e4f44a46290751d`**
-- Contents: 75 entries under a stable `reverseshield-local-demo/` directory;
+- Size: **753,787 bytes**
+- SHA-256: **`e0526bfa1eefe741cbaf4166fa2cbf1ed95f70455076ea0d6d0baaedc91430d2`**
+- The builder was run twice with identical size and digest. A detached
+  `ReverseShield_Lite_Windows_Day1.zip.sha256` file is written beside the ZIP.
+- Contents: 78 entries under a stable `reverseshield-local-demo/` directory;
   no `tools/`, `runs/`, `backups/`, `.git/` or
   `__pycache__/` entries. The generated workspace-specific DOCX/PDF reports
   are excluded. This
@@ -104,9 +109,13 @@ branch or Lite ZIP. No selected target was executed.
   `rpm2cpio` and a native Linux build toolchain are unavailable on Windows.
 - The supplied generated DOCX/PDF report and plan contain an absolute home
   directory in their evidence text. Existing tracked copies were not changed or
-  included in this Day 1 staging; those four files are excluded from the Lite
-  ZIP, and their source builders were sanitized. Rebuild and export fresh PDFs
-  before sharing them with the event.
+  The two DOCX files were regenerated from sanitized builders, and text-level
+  extraction found no home-directory path. Their visual layout could not be
+  checked because LibreOffice is unavailable and Word UI automation failed.
+  The two tracked PDFs remain unchanged and still contain an absolute home
+  directory in extracted evidence text. All four generated reports are excluded
+  from the Lite ZIP. Do not share the PDFs; re-export sanitized copies, then
+  visually inspect them before event submission.
 - No PR was opened. Open one from `Day-1---Nasser` if these changes should be
   merged into `main`.
 

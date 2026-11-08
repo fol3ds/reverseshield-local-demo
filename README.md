@@ -27,6 +27,8 @@ explicitly marked not applicable for PE reports. Missing optional adapters are
 shown as unavailable instead of being treated as a failed target analysis.
 
 See `START_HERE.md` for troubleshooting and what works without MinGW.
+The source-only Lite archive and its exclusions are described in
+`LITE_PACKAGE.md`.
 
 ### Fedora / Linux
 
@@ -63,6 +65,9 @@ The first command includes the Windows PE upload and directory-walker checks.
 The second enables the real headless Ghidra smoke test. In PowerShell, set the
 opt-in for the current shell with `$env:RUN_GHIDRA_TESTS = "1"` before running
 `python -m unittest tests.test_engine -v`.
+
+GitHub Actions also runs the regular suite on Windows and Fedora; the Ghidra
+smoke remains opt-in because it requires a separate local tool installation.
 
 ## What the workbench does
 

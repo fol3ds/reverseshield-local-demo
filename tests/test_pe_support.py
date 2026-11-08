@@ -4,11 +4,13 @@ Inputs are self-authored inert PE32+ bytes; outputs are parsed header fields,
 discovery records and static reports. No fixture is ever executed. Extend with
 well-bounded data fixtures and assertions for truthful report claims.
 """
-import shutil
 import os
 import hashlib
+import shutil
+import struct
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import analysis
@@ -30,6 +32,48 @@ class PeSupportTests(unittest.TestCase):
         self.assertEqual(header["sections_count"], 1)
         self.assertEqual(header["section_names"], [".text"])
         self.assertTrue(header["entry_point"].startswith("0x"))
+
+    def _parse_temp_payload(self, payload):
+        temporary = tempfile.NamedTemporaryFile(suffix=".exe", delete=False)
+        try:
+            with temporary:
+                temporary.write(payload)
+            return analysis.parse_pe_header(temporary.name)
+        finally:
+            Path(temporary.name).unlink(missing_ok=True)
+
+    def test_truncated_dos_header_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "Not a PE file"):
+            self._parse_temp_payload(b"MZ")
+
+    def test_invalid_pe_signature_is_rejected(self):
+        payload = bytearray(PE.read_bytes())
+        pe_offset = struct.unpack_from("<I", payload, 0x3C)[0]
+        payload[pe_offset] = ord("X")
+        with self.assertRaisesRegex(ValueError, "Invalid PE signature"):
+            self._parse_temp_payload(payload)
+
+    def test_truncated_coff_and_optional_headers_are_rejected(self):
+        payload = PE.read_bytes()
+        pe_offset = struct.unpack_from("<I", payload, 0x3C)[0]
+        with self.subTest(header="COFF"), self.assertRaisesRegex(ValueError, "Truncated PE COFF"):
+            self._parse_temp_payload(payload[:pe_offset + 4 + 8])
+        with self.subTest(header="optional"), self.assertRaisesRegex(ValueError, "Truncated PE optional"):
+            self._parse_temp_payload(payload[:pe_offset + 4 + 20 + 2])
+
+    def test_excessive_section_count_is_bounded_by_file_data(self):
+        payload = bytearray(PE.read_bytes())
+        pe_offset = struct.unpack_from("<I", payload, 0x3C)[0]
+        struct.pack_into("<H", payload, pe_offset + 6, 0xFFFF)
+        header = self._parse_temp_payload(payload)
+        self.assertGreater(header["sections_count"], 1)
+        self.assertLessEqual(header["sections_count"], 96)
+
+    def test_missing_objdump_is_reported_as_unavailable(self):
+        with mock.patch.object(engine, "which_tool", return_value=None):
+            self.assertFalse(engine.inventory()["objdump"]["available"])
+            with self.assertRaisesRegex(ValueError, "unavailable"):
+                engine.analyze(PE, tools=["objdump"])
 
     def test_discovery_accepts_pe_as_a_target(self):
         target = discovery._file_target(PE, PE.name)
