@@ -4,7 +4,7 @@
 
 - Branch: `Day-1---Nasser`
 - Base commit: `6ceb1f2` (the GitHub branch tip fetched before the Day 1 changes).
-- PR link: not created; no remote is configured in the supplied workspace.
+- PR: not opened. The Day 1 commit is pushed to `origin/Day-1---Nasser`.
 - Date (Riyadh): 8 November 2026
 
 ## What changed
@@ -65,9 +65,10 @@ Passed.
 
 On Windows, set the Ghidra opt-in with `set RUN_GHIDRA_TESTS=1` in Command
 Prompt, or `$env:RUN_GHIDRA_TESTS = "1"` in PowerShell before running the
-second command. The test run used a writable temporary directory under ignored
-`runs/` data; it resolved the installed project-local MinGW without requiring
-`run.bat` to modify `PATH`.
+second command. The suite used a writable temporary directory under ignored
+`runs/` data. `PATH`, `GHIDRA_HOME` and `JAVA_HOME` pointed to tools already
+installed in the original source workspace; they are not included in this
+branch or Lite ZIP. No selected target was executed.
 
 ## Lite ZIP
 
@@ -106,8 +107,8 @@ second command. The test run used a writable temporary directory under ignored
   included in this Day 1 staging; those four files are excluded from the Lite
   ZIP, and their source builders were sanitized. Rebuild and export fresh PDFs
   before sharing them with the event.
-- The repository has no remote, so a PR link cannot be supplied from this
-  workspace. The owner should add the remote, push this branch and open the PR.
+- No PR was opened. Open one from `Day-1---Nasser` if these changes should be
+  merged into `main`.
 
 ## Next person's first three actions (Zayed, Day 2)
 
