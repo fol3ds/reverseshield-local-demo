@@ -1,4 +1,9 @@
-"""Small python-docx helpers for the ReverseShield submission documents."""
+"""Reusable formatting helpers for the submission DOCX files.
+
+Inputs are document objects, text and layout values; outputs are formatted
+document elements. Helpers do not inspect or execute target binaries. Extend
+with document-only formatting functions shared by report and plan builders.
+"""
 from __future__ import annotations
 
 import re

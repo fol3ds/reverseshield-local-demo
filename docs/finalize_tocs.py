@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Two-pass static TOC page numbers for the ReverseShield DOCX files."""
+"""Finalize table-of-contents page numbers in generated ReverseShield DOCX files.
+
+Inputs are DOCX files and LibreOffice page-layout output; output is updated
+document fields. This document tool does not inspect or execute target
+binaries. Extend only the submission document rendering workflow.
+"""
 from __future__ import annotations
 
 import json

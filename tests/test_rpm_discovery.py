@@ -1,4 +1,9 @@
-"""Static-only package tests. The fixture's sample is compiled, never run."""
+"""Static-only RPM and archive safety tests.
+
+Inputs are synthetic headers and optional locally built RPM fixtures; outputs
+are extraction-boundary assertions. Embedded executables are package data and
+are never launched. Extend with adversarial archive metadata, not execution.
+"""
 import io
 import os
 import shutil

@@ -1,13 +1,16 @@
 """Binary-only metadata hygiene for a copy of any selected ELF or PE file.
 
-This is deliberately *not* code obfuscation and not a binary rewriter. It
-removes non-essential metadata from a copy:
+Inputs are a validated ELF/PE source and run-local destination; outputs are a
+metadata-reduced copy, hashes and command records. This is deliberately *not*
+code obfuscation and not a binary rewriter. It removes non-essential metadata
+from a copy:
 
 * static symbol table and debug information (``strip --strip-all``);
 * compiler/annobin comments and the GNU build-id note (``objcopy``);
 * PE debug/PDB sections when present.
 
-The source file is never modified. Nothing here executes the target.
+The source file is never modified. Nothing here executes the target. Extend
+only with copy-based metadata edits and explicit format/tool capability checks.
 """
 from __future__ import annotations
 

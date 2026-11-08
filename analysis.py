@@ -1,8 +1,9 @@
 """ELF and PE header parsing helpers.
 
-Only metadata is parsed here. The caller receives dictionaries that are safe
-to serialize into a report. No function in this module executes or maps the
-selected file.
+Inputs are bounded ELF/PE byte streams and static-tool output; outputs are
+validated metadata dictionaries and tool records. Only metadata is parsed
+here. No function executes or maps the selected file. Add new container
+formats as separate bounded parsers rather than weakening ELF/PE validation.
 """
 from __future__ import annotations
 

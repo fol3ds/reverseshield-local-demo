@@ -7,12 +7,16 @@ harder to read casually:
   compiler cannot fold away, so immediates disappear from the disassembly;
 * an opaque guard that is always false at runtime but survives compilation.
 
-The transformation is applied to copies of the bundled self-authored samples.
-Nothing here executes a target; the result is only compiled and inspected.
+Inputs are a bundled sample ID and destination directory; outputs are
+transformed C sources, a compiled inert artifact and hashes. The transformation
+is applied to copies of the bundled self-authored samples. Compilation is
+allowed, but the generated target is never launched. Extend only for the
+self-authored sample corpus and keep limitations in reports.
 """
 from __future__ import annotations
 
 import hashlib
+import os
 import os
 import re
 import shutil
@@ -97,7 +101,8 @@ def build_protected(sample_id: str, destination: Path, key: int = KEY) -> dict:
             headers.add(header)
     for header in headers:
         shutil.copyfile(header, work / header.name)
-    output = destination / f"{sample_id}-protected.elf"
+    output_suffix = ".exe" if os.name == "nt" else ".elf"
+    output = destination / f"{sample_id}-protected{output_suffix}"
     command = [compiler, *FLAGS, *spec[2], "-I", str(work), *map(str, sources), "-o", str(output)]
     result = subprocess.run(command, capture_output=True, text=True, timeout=60, check=False,
                             env={**os.environ, "LC_ALL": "C"})

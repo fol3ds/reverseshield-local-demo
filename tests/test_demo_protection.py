@@ -1,5 +1,11 @@
-"""Demo-grade source transformation tests. Compiled artifacts are never run."""
+"""Tests for the sample-only demonstration transformer.
+
+Inputs are C source snippets and bundled sample IDs; outputs are transformed
+source and compiled artifact metadata. Compilation is covered; resulting
+executables are never run. Extend only against the self-authored sample corpus.
+"""
 import tempfile
+import os
 import unittest
 from pathlib import Path
 
@@ -35,9 +41,13 @@ class TransformTests(unittest.TestCase):
             binary = Path(result["path"])
             self.assertTrue(binary.is_file())
             self.assertGreater(binary.stat().st_size, 0)
-            self.assertEqual(binary.read_bytes()[:4], b"\x7fELF")
+            if os.name == "nt":
+                self.assertEqual(binary.read_bytes()[:2], b"MZ")
+            else:
+                self.assertEqual(binary.read_bytes()[:4], b"\x7fELF")
             self.assertTrue(result["sha256"])
-            self.assertEqual(binary.stat().st_mode & 0o111, 0)
+            if os.name != "nt":
+                self.assertEqual(binary.stat().st_mode & 0o111, 0)
 
 
 if __name__ == "__main__":

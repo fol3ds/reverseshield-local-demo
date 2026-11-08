@@ -1,8 +1,13 @@
-"""Data-only RPM ingestion. No install, shell, scriptlets, or target execution.
+"""Bounded, data-only RPM ingestion.
 
 rpm2cpio v6 is explicitly asked for uncompressed newc, not its default PAX
 format. Preflight the entire archive before creating payload files. All limits
 apply before payload writes; the private conversion spool is separately capped.
+
+Inputs are RPM bytes and a caller-owned workspace; outputs are extracted
+payload paths and dependency metadata. Nothing is installed, passed to a shell,
+or executed. Extend supported payload members only with equivalent path,
+size, count and link validation. This adapter is Linux-only.
 """
 from __future__ import annotations
 

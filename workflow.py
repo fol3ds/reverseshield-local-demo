@@ -1,4 +1,11 @@
-"""Local, static-only job orchestration. Target executables are always data."""
+"""Local, static-only job orchestration.
+
+Inputs are authorized selections, target IDs, static adapter names and
+operation profiles; outputs are asynchronous jobs, event streams, snapshots
+and JSON reports under the run directory. Originals and targets remain data
+and are never executed. Add operations only with explicit scope, bounded
+resources, copy-only writes and a recorded limitations list.
+"""
 from __future__ import annotations
 
 import copy
@@ -15,6 +22,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from analysis import has_elf_magic, has_pe_magic
+from platform_support import local_tool_dirs, which_tool
 from samples import get_sample
 
 MAX_TARGET_BYTES = 64 * 1024 * 1024
@@ -127,7 +135,7 @@ class Workbench:
                 sample = get_sample(selection.get('sample_id'))
                 if sample is None or len(targets) != 1 or Path(targets[0]['absolute_path']).resolve() != (self.root / sample['binary']).resolve():
                     raise ValueError('Symbol removal is restricted to the bundled self-authored samples.')
-                if not shutil.which('strip'):
+                if not which_tool('strip', tuple(local_tool_dirs(self.root))):
                     raise ValueError('GNU strip is not available.')
             elif operation == 'protect_compare':
                 sample = get_sample(selection.get('sample_id'))
@@ -201,7 +209,9 @@ class Workbench:
                 before = reports[0]['analysis']
                 original = job['_directory'] / 'original-0.elf'
                 transformed = job['_directory'] / 'symbols-removed.elf'
-                tool = shutil.which('strip')
+                tool = which_tool('strip', tuple(local_tool_dirs(self.root)))
+                if not tool:
+                    raise RuntimeError('GNU strip is unavailable.')
                 command = [tool, '--strip-unneeded', '-o', str(transformed), str(original)]
                 self._emit(job, {'type': 'tool_start', 'tool': 'strip', 'phase': 'transform', 'message': 'GNU strip: remove unneeded symbols into a separate sample copy.'})
                 stripped = subprocess.run(command, capture_output=True, text=True, timeout=30, check=False,
@@ -343,7 +353,7 @@ class Workbench:
                 if candidate.is_file():
                     return candidate
             raise ValueError('Binary hygiene artifact is not available.')
-        protected = sorted((self.jobs[job_id]['_directory'] / 'protected').glob('*-protected.elf'))
+        protected = sorted((self.jobs[job_id]['_directory'] / 'protected').glob('*-protected.*'))
         if not protected:
             raise ValueError('Protected artifact is not available.')
         return protected[0]

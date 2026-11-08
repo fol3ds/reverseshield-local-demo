@@ -1,8 +1,10 @@
 """Same-origin local API for discovery, asynchronous jobs, and reports.
 
-State-changing routes require the per-session token. Uploads are bounded and
-written to run-local input workspaces; they are never executed. Reports and
-artifacts are served from ``runs/<job_id>/`` only.
+Inputs are same-origin loopback JSON or bounded upload bytes; outputs are
+discovery selections, job events and report/artifact downloads. State-changing
+routes require the per-session token. Uploads are written to run-local input
+workspaces and never executed. Add routes with the same authorization checks,
+format validation and run-local storage boundary.
 """
 import json
 import os
@@ -12,6 +14,7 @@ import threading
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
+from analysis import detect_format
 from samples import ROOT, SAMPLES, get_sample
 from workflow import Workbench
 
@@ -186,9 +189,11 @@ class UpgradeApiMixin:
             if sample is None:
                 raise KeyError('Unknown sample id.')
             binary = ROOT / sample['binary']
+            with binary.open('rb') as stream:
+                sample_format = detect_format(stream.read(64))
             discovered = {'app': {'name': sample['name'], 'source': 'sample'},
                           'targets': [{'target_id': sample['id'], 'relative_path': binary.name,
-                                       'absolute_path': str(binary.resolve()), 'size_bytes': binary.stat().st_size, 'format': 'ELF',
+                                       'absolute_path': str(binary.resolve()), 'size_bytes': binary.stat().st_size, 'format': sample_format,
                                        'analyzable': True, 'reason': None}]}
         elif kind == 'flatpak':
             from discovery import discover_flatpak_targets

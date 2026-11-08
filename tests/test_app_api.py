@@ -1,5 +1,12 @@
+"""Legacy HTTP API tests for ELF uploads, sample metadata and Flatpak routes.
+
+Inputs are local HTTP requests and inert fixtures; outputs are JSON responses.
+The API reads files as data and never executes uploaded or installed targets.
+Extend Windows coverage in the PE-capable upgraded API test module.
+"""
 import http.client
 import json
+import os
 import threading
 import unittest
 from http.server import ThreadingHTTPServer
@@ -14,6 +21,7 @@ except ImportError:
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@unittest.skipIf(os.name == "nt", "legacy API only analyzes ELF and Flatpak; Windows PE uses the upgraded API")
 class LocalWorkbenchApiTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

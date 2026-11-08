@@ -1,4 +1,9 @@
-"""Binary metadata hygiene tests; synthetic PE fixture is self-authored."""
+"""Copy-only metadata hygiene tests for an inert self-authored PE fixture.
+
+Inputs are fixture bytes and a temporary output directory; outputs are hashes
+and metadata-only copies. The original and output are never executed. Extend
+with additional format fixtures while checking source immutability.
+"""
 import tempfile
 import unittest
 from pathlib import Path

@@ -1,5 +1,13 @@
-"""PE/COFF support tests; the fixture is a self-authored minimal PE32+ file."""
+"""PE/COFF parser, discovery and static-tool acceptance tests.
+
+Inputs are self-authored inert PE32+ bytes; outputs are parsed header fields,
+discovery records and static reports. No fixture is ever executed. Extend with
+well-bounded data fixtures and assertions for truthful report claims.
+"""
 import shutil
+import os
+import hashlib
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -29,15 +37,47 @@ class PeSupportTests(unittest.TestCase):
         self.assertEqual(target["format"], "PE")
         self.assertTrue(target["analyzable"])
 
-    @unittest.skipUnless(shutil.which("objdump"), "GNU objdump is required for PE disassembly")
+    @unittest.skipUnless(engine.inventory()["objdump"]["available"], "GNU objdump is required for PE disassembly")
     def test_engine_analyzes_pe_with_objdump(self):
-        report = engine.analyze(PE, tools=["objdump", "strings"])
+        selected = ["objdump", "strings"]
+        if engine.inventory()["readelf"]["available"]:
+            selected.insert(0, "readelf")
+        report = engine.analyze(PE, tools=selected)
         self.assertEqual(report["metadata"]["format"], "PE")
         self.assertEqual(report["metadata"]["class"], "PE32+")
         self.assertEqual(report["metadata"]["sections_count"], 1)
-        self.assertEqual(report["tools"][0]["tool"], "objdump")
-        self.assertEqual(report["tools"][0]["status"], "ok")
+        records = {item["tool"]: item for item in report["tools"]}
+        self.assertEqual(records["objdump"]["status"], "ok")
+        if "readelf" in selected:
+            self.assertEqual(records["readelf"]["status"], "skipped")
         self.assertGreaterEqual(len(report["artifacts"]["functions"]), 1)
+        self.assertEqual(report["sha256"], hashlib.sha256(PE.read_bytes()).hexdigest())
+        self.assertEqual(report["metadata"]["machine"], "x86-64")
+        self.assertTrue(report["metadata"]["entry_point"].startswith("0x"))
+        self.assertIn("never executed", " ".join(report["limitations"]).lower())
+
+    @unittest.skipUnless(os.name == "nt" and engine.inventory()["objdump"]["available"],
+                         "Windows PE walker and objdump acceptance test requires native Windows objdump")
+    def test_windows_directory_walker_discovers_pe_fixture_without_execution(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary) / "safe-app"
+            (folder / "bin").mkdir(parents=True)
+            (folder / "bin" / "fixture.exe").write_bytes(PE.read_bytes())
+            (folder / "bin" / "library.dll").write_bytes(PE.read_bytes())
+
+            targets, scan = discovery._scan_directory_windows(folder)
+
+            self.assertTrue(scan["complete"], scan["errors"])
+            self.assertEqual([item["relative_path"] for item in targets], ["bin/fixture.exe", "bin/library.dll"])
+            self.assertTrue(all(item["format"] == "PE" and item["analyzable"] for item in targets))
+            header = analysis.parse_pe_header(folder / "bin" / "fixture.exe")
+            self.assertEqual((header["class"], header["machine"], header["sections_count"]), ("PE32+", "x86-64", 1))
+            self.assertTrue(header["entry_point"].startswith("0x"))
+            report = engine.analyze(folder / "bin" / "fixture.exe", tools=["objdump"])
+            self.assertEqual(report["metadata"]["format"], "PE")
+            self.assertEqual(report["sha256"], hashlib.sha256(PE.read_bytes()).hexdigest())
+            self.assertEqual(report["tools"][0]["status"], "ok")
+            self.assertIn("never executed", " ".join(report["limitations"]).lower())
 
 
 if __name__ == "__main__":

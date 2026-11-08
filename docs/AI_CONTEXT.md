@@ -147,7 +147,8 @@ Always include `behavior_verified: false` and a limitations list.
 
 ## 8. Windows-specific notes
 
-Windows support is native, not WSL:
+Windows support is native, not WSL. Current validation is on Windows with
+Python 3.15 and project-local Ghidra 12.2, Temurin JDK 25 and MinGW-w64:
 
 - `platform_support.py` handles `.exe`/`.bat` lookup, process groups,
   termination and permissions.
@@ -156,12 +157,36 @@ Windows support is native, not WSL:
 - PE files are accepted by discovery, upload, snapshot and analysis.
 - `readelf` is skipped for PE; `objdump`, `strings`, `nm` and Ghidra are used.
 - Flatpak and RPM are Linux-only; the UI/backend should return a clear error.
-- `tools/` is not committed. `setup.bat` downloads Ghidra/JDK; optional
-  `w64devkit` supplies `gcc`/binutils for source protection and binary hygiene.
+- `tools/` is not committed. `setup.bat` downloads Ghidra/JDK and MinGW-w64;
+  it validates Python 3.11+ by trying the `py` launcher and then `python`, so
+  an inaccessible stale launcher does not block a usable Python installation.
+- Missing `readelf` is expected on native Windows. PE reports record it as
+  `skipped`/not applicable; absent Ghidra or binutils adapters are reported as
+  unavailable and do not prevent built-in PE header parsing. Do not turn these
+  capability gaps into silent success or target-analysis failures.
+- Windows folder discovery uses `_scan_directory_windows`, accepts `.exe` and
+  `.dll` by PE signatures and extracts the PE32/PE32+, machine, section and
+  entry-point fields. Extension alone never establishes an executable format.
+- Sample files built with MinGW on Windows use `.exe` extensions and are
+  labeled from their parsed file signatures. Bundled Linux ELF fixtures still
+  work on Windows through Ghidra and PE-aware GNU `objdump`.
+- `tests/test_app_api.py` covers the legacy ELF/Flatpak API and is skipped on
+  Windows; Windows acceptance uses the upgraded token-protected API and PE
+  tests. Flatpak, RPM, and POSIX descriptor/permission behavior are Linux-only.
 - File modes (`0600`/`0700`) are POSIX-only; Windows uses the project folder
   location and user account as the boundary.
 
 ## 9. Tests and checks
+
+```bat
+python -m unittest discover -s tests -v
+set RUN_GHIDRA_TESTS=1
+python -m unittest tests.test_engine -v
+```
+
+In PowerShell use `$env:RUN_GHIDRA_TESTS = "1"` before the second test
+command. Current Windows test evidence and known environment-specific failures
+are recorded in `docs/handoff/DAY1.md`.
 
 ```bash
 python3 -m unittest discover -s tests -v

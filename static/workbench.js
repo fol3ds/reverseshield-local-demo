@@ -1,10 +1,15 @@
 /*
  * ReverseShield browser client.
  *
- * Sections: API client -> discovery/target selection -> job watcher ->
- * analysis renderer -> comparison -> monitor/jobs.
+ * Structural section map:
+ *   1. API client and request authorization
+ *   2. Discovery and target selection
+ *   3. Asynchronous job watcher and lifecycle
+ *   4. Analysis and artifact rendering
+ *   5. Before/after comparison
+ *   6. Monitor and job history
  *
- * Safety rules: never inject backend strings with innerHTML; use textContent
+ * Safety rules: never use innerHTML. Render backend strings with textContent
  * and DOM builders. The browser only talks to the loopback API. No target is
  * executed by this file. See docs/AI_CONTEXT.md before extending the UI.
  */
@@ -72,7 +77,7 @@
       if (targetIds.length !== 1) throw new Error('Select exactly one sample target for comparison.');
     }
     if (operation === 'binary_compare') {
-      if (targetIds.length !== 1) throw new Error('Select exactly one ELF target for binary hygiene.');
+      if (targetIds.length !== 1) throw new Error('Select exactly one ELF or PE target for binary hygiene.');
       if (!binaryAvailable) throw new Error('Binary hygiene tools are unavailable.');
     }
     if (profile === 'symbol_removal' || (operation === 'strip_compare' && !profile)) {
@@ -367,8 +372,8 @@
       all.checked = targets.length > 0 && targets.length === state.targetIds.size;
       all.indeterminate = state.targetIds.size > 0 && state.targetIds.size < targets.length;
       let hint = 'Select targets and confirm authorization. Transformations operate on one copy at a time.';
-      if (state.selection && profile === 'binary_hygiene' && state.targetIds.size !== 1) hint = 'Binary hygiene requires exactly one selected ELF target.';
-      else if (state.selection && ['symbol_removal', 'constant_blinding'].includes(profile) && state.selection.sourceKind !== 'sample') hint = 'Source protection is limited to bundled sample copies; binary hygiene can run on any selected ELF copy.';
+      if (state.selection && profile === 'binary_hygiene' && state.targetIds.size !== 1) hint = 'Binary hygiene requires exactly one selected ELF or PE target.';
+      else if (state.selection && ['symbol_removal', 'constant_blinding'].includes(profile) && state.selection.sourceKind !== 'sample') hint = 'Source protection is limited to bundled sample copies; binary hygiene can run on any selected ELF or PE copy.';
       else if (state.selection && profile === 'symbol_removal' && !state.status?.protection?.available) hint = 'GNU strip is unavailable. Demo constant blinding remains available for bundled samples.';
       else if (state.selection && profile === 'binary_hygiene' && !state.status?.protection?.binary_hygiene) hint = 'Binary hygiene requires GNU strip and objcopy; one is unavailable.';
       else if (state.job && !isTerminal(state.job.status)) hint = 'A selected job is active. Cancel it or wait for completion before starting another run.';

@@ -1,3 +1,9 @@
+"""Unit tests for ELF/PE metadata parsers.
+
+Inputs are inert fixture bytes and bounded text; outputs are parser assertions.
+Fixture executables are never launched. Extend with malformed-but-bounded byte
+fixtures and verify fail-closed metadata behavior.
+"""
 import unittest
 
 try:
