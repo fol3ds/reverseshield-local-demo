@@ -1,5 +1,35 @@
 # Changelog
 
+## Day 2 (Zayed) — analysis accuracy, one-click demo, comparison, security review
+
+- Added `metrics.py`: bounded content metrics from file bytes for ELF and PE
+  (section counts, executable/writable sections, per-section and file
+  entropy, imports/exports, string categories, debug/symbol flags). ELF/PE
+  symbol tables, readelf/nm counts and Ghidra symbols are reported separately.
+- Added a coverage block: tools ran / skipped (with reason) / failed /
+  unavailable / not selected, and truncated outputs.
+- Ghidra: per-run time limit and CPU limit, large-target guard (> 8 MiB needs
+  confirmation or "Lightweight tools only"), timing in the report, process-tree
+  stop and project cleanup on cancel/timeout (tested with a fake launcher).
+- UI: "Run demo · Level 5" one-click flow, ELF/PE badges, Ghidra options,
+  actionable empty/error/offline states, Windows drive paths accepted.
+- Comparison: functions matched by address then name with unmatched/renamed
+  lists; content metrics before/after; N/A never shown as zero; "what changed /
+  did not change" summary; limitations box; neutral "transformed copy" labels.
+- Security: review in `docs/security/DAY2_SECURITY_REVIEW.md`; fixed
+  System32 paths for cmd.exe/taskkill, cmd.exe metacharacter refusal for batch
+  launch (BatBadBut class), UNC path refusal, junction skipping.
+- Readable redesign (10 Nov): calm light theme with a matching dark mode
+  (header toggle), system font at 15 px, plain-English labels everywhere, a
+  "What someone could learn from this file" summary at the top of each report,
+  explained metric tables, Yes/No instead of true/false, thousands separators,
+  folded-away disclaimers, readable activity log (local times, shortened
+  paths), English file picker and Latin digits in number fields. The old
+  dark-cyan colour tokens in `tests/test_ui_contract.py` were replaced with
+  the new theme tokens.
+- Docs: pitch deck draft + 3-minute demo script, Day 2 hand-off, screenshots,
+  `docs/ROADMAP.md` (hardening checks and CVE lookup planned, not built).
+
 ## 0.3.0-team — four-person Windows/Fedora hand-off edition
 
 - Added Windows PE/COFF header support to discovery, upload ingestion, snapshot

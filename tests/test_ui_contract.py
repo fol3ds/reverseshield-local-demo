@@ -30,7 +30,7 @@ class Document(HTMLParser):
 
 class WorkbenchUiContractTests(unittest.TestCase):
     def test_operate_shell_exposes_discovery_safety_and_local_assets(self):
-        html = (STATIC / "index.html").read_text()
+        html = (STATIC / "index.html").read_text(encoding="utf-8")
         doc = Document(html)
         for name in ("operate", "compare", "monitor", "readme", "appSelect", "refreshAppsBtn",
                      "discoverAppBtn", "localPath", "discoverPathBtn", "fileInput", "ingestBtn",
@@ -48,13 +48,12 @@ class WorkbenchUiContractTests(unittest.TestCase):
         self.assertNotIn("fonts.googleapis", html)
         self.assertIn('src="/static/workbench.js"', html)
         self.assertIn('href="/static/workbench.css"', html)
-        css = (STATIC / "workbench.css").read_text()
-        for token in ("--bg:#04070d", "--bg2:#060a12", "--card:#080f1a", "--card2:#0b1524",
-                      "--inset:#0e1a2c", "--accent:#00e0ff", "--teal:#14b8a6", "--text:#d3e3f0",
-                      "--muted:#7b8fa3", "--dim:#46586a", "--good:#2dd4bf", "--warn:#f5b544",
-                      "--bad:#f87171", "--border:rgba(0,229,255,.14)",
-                      "--border-strong:rgba(0,229,255,.32)", "--accent-dim:rgba(0,229,255,.55)"):
+        css = (STATIC / "workbench.css").read_text(encoding="utf-8")
+        # Day 2 readable theme: calm light palette plus a matching dark palette.
+        for token in ("--bg:", "--surface:", "--text:", "--muted:", "--accent:", "--good:", "--warn:", "--bad:",
+                      "--font:", "--mono:", "prefers-color-scheme:dark", ':root[data-theme="dark"]'):
             self.assertIn(token, css)
+        self.assertNotIn("fonts.googleapis", css)
         self.assertIn(":focus-visible", css)
         self.assertIn("@media", css)
 
@@ -176,7 +175,7 @@ assert.throws(() => UI.jobPayload({...options,operation:'binary_compare',binaryA
 """)
 
     def test_connected_views_expose_monitor_comparison_and_safe_evidence(self):
-        html = (STATIC / "index.html").read_text()
+        html = (STATIC / "index.html").read_text(encoding="utf-8")
         doc = Document(html)
         for name in ("jobStatus", "jobId", "cancelJobBtn", "resumeJobBtn", "jobEvents", "recentJobs",
                      "refreshJobsBtn", "downloadReportBtn", "downloadArtifactBtn", "resultTargetSelect",
@@ -187,7 +186,7 @@ assert.throws(() => UI.jobPayload({...options,operation:'binary_compare',binaryA
         for mode in ("basic", "pseudocode", "graphs", "all"):
             self.assertTrue(any(tag == "option" and attrs.get("value") == mode for tag, attrs in doc.elements))
         self.assertTrue(any(tag == "option" and attrs.get("value") == "binary_hygiene" for tag, attrs in doc.elements))
-        script = (STATIC / "workbench.js").read_text()
+        script = (STATIC / "workbench.js").read_text(encoding="utf-8")
         for unsafe in (".innerHTML", "insertAdjacentHTML", "eval(", "Math.random("):
             self.assertNotIn(unsafe, script)
         for phrase in ("Symbol removal applied", "Not collected", "textContent", "createElementNS", "boot()"):
@@ -227,7 +226,7 @@ assert.ok(warnings.some(message => message.includes('functions') && message.incl
         self.assertIsNotNone(shutil.which("node"), "node required for UI behavior contracts")
         result = subprocess.run(["node", "-e", "const assert = require('node:assert/strict');\n"
                                  "const UI = require('./static/workbench.js');\n" + script],
-                                cwd=ROOT, text=True, capture_output=True, timeout=15)
+                                cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True, timeout=15)
         self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
 
 

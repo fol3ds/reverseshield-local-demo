@@ -36,10 +36,37 @@ def which_tool(name: str, extra_dirs: tuple[Path, ...] = ()) -> str | None:
     return None
 
 
+# cmd.exe re-parses its command line, so quoting by subprocess does not stop
+# these characters from being interpreted (CVE-2024-3566 "BatBadBut" class).
+CMD_METACHARACTERS = frozenset('&|<>^%!"\r\n')
+
+
+def system_executable(name: str) -> str:
+    """Absolute System32 path for a Windows system tool.
+
+    A bare ``cmd.exe`` or ``taskkill`` is resolved by CreateProcess, which
+    searches the current directory before System32 (CWE-427). Use the real
+    system copy instead.
+    """
+    if not IS_WINDOWS:
+        return name
+    root = os.environ.get("SystemRoot") or os.environ.get("windir") or r"C:\Windows"
+    candidate = Path(root) / "System32" / name
+    return str(candidate) if candidate.is_file() else name
+
+
 def command_for(path: str, *arguments: str) -> list[str]:
-    """Build an argv list; batch files must go through cmd.exe on Windows."""
+    """Build an argv list; batch files must go through cmd.exe on Windows.
+
+    Arguments passed through cmd.exe are refused if they contain characters
+    cmd.exe would interpret (for example a project folder named ``R&D``).
+    """
     if IS_WINDOWS and path.lower().endswith((".bat", ".cmd")):
-        return ["cmd.exe", "/c", path, *map(str, arguments)]
+        unsafe = [value for value in (path, *map(str, arguments)) if CMD_METACHARACTERS & set(value)]
+        if unsafe:
+            raise ValueError("A path passed to a Windows batch launcher contains a character that cmd.exe would "
+                             "interpret (& | < > ^ % ! or a quote). Move the project to a folder without these characters.")
+        return [system_executable("cmd.exe"), "/d", "/c", path, *map(str, arguments)]
     return [path, *map(str, arguments)]
 
 
@@ -57,7 +84,7 @@ def terminate_tree(process: subprocess.Popen, *, grace: float = 0.3) -> None:
     if IS_WINDOWS:
         try:
             subprocess.run(
-                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                [system_executable("taskkill.exe"), "/PID", str(process.pid), "/T", "/F"],
                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL, timeout=5, check=False,
             )

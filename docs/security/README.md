@@ -11,6 +11,7 @@ evidence, not a certification.
 | Semgrep (`p/security-audit`, `p/secrets`, `p/python`, `p/javascript`) | 0 findings | `semgrep-baseline.json` |
 | detect-secrets | 0 findings | `detect-secrets-baseline.json` |
 | ZAP/DAST | Not executed yet; Day 3 task D3-02 | — |
+| Day 2 manual review + Bandit re-run (9 Nov) | 12 findings: 4 fixed, 8 open with mitigations; Bandit 27 low / 0 medium / 0 high | `DAY2_SECURITY_REVIEW.md` |
 
 The interface is loopback-only, state-changing calls require a per-session
 token and a same-origin check, and the selected target is never executed.

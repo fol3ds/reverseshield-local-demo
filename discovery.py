@@ -98,6 +98,24 @@ def find_elf_targets(root: str | Path, max_file_bytes: int = MAX_FILE_BYTES) -> 
     return targets
 
 
+def _is_link_like(path: Path) -> bool:
+    """True for symlinks, NTFS junctions and other reparse points (CWE-59).
+
+    ``Path.is_symlink`` is False for junctions, so a junction inside a chosen
+    folder could otherwise lead the scan to another part of the disk.
+    """
+    try:
+        if path.is_symlink():
+            return True
+        isjunction = getattr(os.path, "isjunction", None)
+        if isjunction is not None and isjunction(path):
+            return True
+        attributes = getattr(path.stat(follow_symlinks=False), "st_file_attributes", 0)
+        return bool(attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+    except OSError:
+        return True
+
+
 def _scan_directory_windows(root: str | Path, max_file_bytes: int = MAX_FILE_BYTES) -> tuple[list, dict]:
     """Portable directory walk for Windows (no dir_fd / O_DIRECTORY)."""
     base = Path(root).resolve(strict=True)
@@ -117,7 +135,7 @@ def _scan_directory_windows(root: str | Path, max_file_bytes: int = MAX_FILE_BYT
                 excluded += 1
                 continue
             candidate = Path(dirpath) / name
-            if candidate.is_symlink():
+            if _is_link_like(candidate):
                 excluded += 1
                 continue
             if (candidate / "pyvenv.cfg").is_file():
@@ -130,7 +148,7 @@ def _scan_directory_windows(root: str | Path, max_file_bytes: int = MAX_FILE_BYT
             if visited > MAX_SCAN_FILES:
                 raise ValueError(f"Directory scan exceeded the {MAX_SCAN_FILES:,}-entry safety limit.")
             candidate = Path(dirpath) / name
-            if name.startswith(".") or candidate.is_symlink():
+            if name.startswith(".") or _is_link_like(candidate):
                 excluded += 1
                 continue
             try:

@@ -60,6 +60,7 @@ Any change must preserve these:
 | `rpm_ingest.py` | Bounded RPM header/payload extraction (Linux only) |
 | `engine.py` | Tool adapters, cross-platform process runner, parsers, Ghidra export |
 | `analysis.py` | ELF/PE header parsing and legacy metadata helpers |
+| `metrics.py` | Bounded content metrics from file bytes (sections, entropy, imports/exports, strings, debug flags) |
 | `workflow.py` | Selections, async jobs, events, comparison, protections |
 | `demo_protection.py` | Sample-only C source transformer and protected build |
 | `binary_protection.py` | Binary-only metadata hygiene on a copy |
@@ -78,7 +79,8 @@ source (Flatpak / folder / RPM / upload / sample)
   -> selection (target IDs + absolute paths + identity)
   -> job start (authorization required)
   -> snapshot copy under runs/<job_id>/original-N.<ext>
-  -> engine.analyze(snapshot) with selected tools
+  -> engine.analyze(snapshot, options) with selected tools
+     (+ metrics.content_metrics(snapshot) and a coverage summary)
   -> events.jsonl + report.json + Ghidra export/logs
   -> optional transform on the snapshot copy
   -> reanalyze the transformed copy
@@ -191,7 +193,7 @@ are recorded in `docs/handoff/DAY1.md`.
 ```bash
 python3 -m unittest discover -s tests -v
 RUN_GHIDRA_TESTS=1 python3 -m unittest tests.test_engine -v
-python3 -m py_compile app.py analysis.py workflow.py engine.py discovery.py \
+python3 -m py_compile app.py analysis.py workflow.py engine.py discovery.py metrics.py \
   rpm_ingest.py demo_protection.py binary_protection.py platform_support.py http_upgrade.py
 node --check static/workbench.js
 ```
@@ -206,8 +208,13 @@ Never add a test that executes a bundled sample or a selected target.
 - Ghidra needs a writable project directory; the workflow deletes the temporary
   project and keeps only the JSON export/logs.
 - `readelf` is ELF-only; do not call it on PE.
-- The comparison counts mix ELF symbols and Ghidra labels; do not present them
-  as a resistance score.
+- "Parsed symbol entries" is the merged list (ELF symbols + Ghidra labels).
+  Use `content_metrics.symbols` (`elf_symbols`, `readelf_symbols`,
+  `nm_symbols`, `ghidra_symbols`) when a source-specific count is needed. None
+  of these is a resistance score.
+- Missing metrics are `null` in JSON and `N/A` in the UI; never coerce to 0.
+- Never launch a `.bat`/`.cmd` with arguments containing `& | < > ^ % !` or
+  quotes; `platform_support.command_for` refuses them (BatBadBut class).
 - A failed reanalysis must preserve the baseline report and transformation
   state.
 - Sequential ZIP editing causes merge conflicts; use the Git workflow in

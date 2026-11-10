@@ -136,8 +136,11 @@ rather than a score, Windows/Linux team workflow, transparent limitations.
 **Impact:** helps developers prioritise release hygiene (debug info, symbols,
 paths, exposed constants) before distribution.
 
-**Roadmap:** more formats (Mach-O, APK, DEB), richer import/export analysis,
-sanitized evidence packs, CI integration, and a validated protection profile.
+**Roadmap:** hardening checks (PIE/NX/RELRO/canary/FORTIFY; ASLR/DEP/CFG),
+known-vulnerable component lookup (offline CVE matching, shown as "possible
+match — verify"), more formats (Mach-O, APK, DEB), sanitized evidence packs,
+CI integration, and a validated protection profile. Details:
+`docs/ROADMAP.md`.
 
 ## 6. Three-minute demo script
 

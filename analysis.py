@@ -88,6 +88,9 @@ def parse_pe_header(path: str | Path) -> dict[str, Any]:
             if len(raw) < 40:
                 break
             name = raw[:8].split(b"\x00", 1)[0].decode("ascii", "replace") or f"section{index + 1}"
+            if name.startswith("/") and name[1:].isdigit() and symbol_ptr:
+                # MinGW keeps long names such as .debug_info in the COFF string table.
+                name = _coff_long_name(stream, symbol_ptr + symbol_count * 18 + int(name[1:])) or name
             virtual_size, virtual_address, raw_size, raw_pointer = struct.unpack_from("<IIII", raw, 8)
             section_characteristics = struct.unpack_from("<I", raw, 36)[0]
             if section_characteristics & 0x20000000:
@@ -122,6 +125,17 @@ def parse_pe_header(path: str | Path) -> dict[str, Any]:
         "symbol_table_present": bool(symbol_ptr),
         "format": "PE",
     }
+
+
+def _coff_long_name(stream, offset: int) -> str:
+    """Read one bounded NUL-terminated COFF string-table entry."""
+    position = stream.tell()
+    try:
+        stream.seek(offset)
+        raw = stream.read(256).split(b"\x00", 1)[0]
+        return raw.decode("ascii", "replace") if raw.isascii() else ""
+    finally:
+        stream.seek(position)
 
 
 def _field(text: str, label: str) -> str:

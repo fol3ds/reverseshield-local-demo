@@ -15,10 +15,12 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from analysis import detect_format
+from engine import GHIDRA_MAX_CPU, GHIDRA_TIMEOUT, GHIDRA_TIMEOUT_RANGE, LARGE_TARGET_BYTES
 from samples import ROOT, SAMPLES, get_sample
 from workflow import Workbench
 
 INIT_LOCK = threading.Lock()
+DEMO_SAMPLE_ID = 'level-5'
 UPLOAD_LIMIT = 256 * 1024 * 1024
 
 
@@ -119,6 +121,10 @@ class UpgradeApiMixin:
                                            'binary_scope': 'one_selected_elf_or_pe_copy'},
                             'package_formats': {'ELF': 'supported', 'PE': 'supported', 'RPM': 'supported' if os.name != 'nt' else 'unsupported_on_windows', 'DEB': 'unsupported', 'APK': 'unsupported'},
                             'platform': 'windows' if os.name == 'nt' else 'linux',
+                            'ghidra': {'large_target_bytes': LARGE_TARGET_BYTES, 'default_timeout_seconds': GHIDRA_TIMEOUT,
+                                       'timeout_range_seconds': list(GHIDRA_TIMEOUT_RANGE), 'default_max_cpu': GHIDRA_MAX_CPU,
+                                       'max_cpu_limit': max(1, os.cpu_count() or 1)},
+                            'demo': {'sample_id': DEMO_SAMPLE_ID},
                             'sample_count': len(SAMPLES), 'upload_limit_bytes': UPLOAD_LIMIT, 'elf_limit_bytes': 64 * 1024 * 1024,
                             'storage': 'Inputs, snapshots, logs and reports stay in the project runs folder until manually removed.'})
             elif path == '/api/jobs':
@@ -163,7 +169,7 @@ class UpgradeApiMixin:
                 data = self._payload()
                 job_id = self.service.start_job(data.get('selection_id'), data.get('target_ids'), data.get('tools'),
                                                 data.get('operation', 'analyze'), authorized=data.get('authorized', False),
-                                                profile=data.get('profile'))
+                                                profile=data.get('profile'), options=data.get('options'))
                 self._json({'job_id': job_id}, 202)
             elif path.startswith('/api/jobs/') and path.endswith('/cancel'):
                 self._payload()
@@ -206,6 +212,10 @@ class UpgradeApiMixin:
             raw = data.get('path')
             if not isinstance(raw, str) or not raw or not Path(raw).is_absolute():
                 raise ValueError('Enter an absolute local path to an app folder, ELF/PE file, or RPM package.')
+            if raw.startswith(('\\\\', '//')) or (os.name == 'nt' and raw.startswith('\\')):
+                # UNC/device paths would make Windows connect to another host
+                # and offer the user's credentials (forced authentication).
+                raise ValueError('Network (UNC) and device paths are not supported. Copy the files to a local folder first.')
             chosen = Path(raw).resolve(strict=True)
             if chosen == Path('/') or any(chosen.is_relative_to(Path(p)) for p in ('/proc', '/sys', '/dev')):
                 raise ValueError('Choose an application folder or ELF/PE/RPM file, not a system pseudo-filesystem.')

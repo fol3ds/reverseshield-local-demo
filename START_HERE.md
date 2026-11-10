@@ -64,9 +64,15 @@ Ghidra and JDK are under `tools/` in the full project.
 
 ## First five minutes in the UI
 
-1. **Operate** → choose **Bundled sample** → `Level 5 · Policy Engine`.
-2. Leave the targets selected and run **Analyze selected targets**.
-3. Watch the live tool log; open the report when the job completes.
+Fastest path: press **Run demo · Level 5** at the top of **Operate**. It does
+steps 1–3 below for you and opens the report.
+
+1. **Operate** → **Bundled sample** → `Level 5 · Policy Engine` → **Use sample**.
+2. Leave the file selected, tick the permission checkbox and press **Analyze selected files**.
+3. Watch the live tool log; open the report when the job completes. The
+   report opens with **What someone could learn from this file**, then the
+   **Overview** tab explains every number. Use the **Dark mode** button if you
+   prefer a dark page.
 4. Open **Compare** → choose a profile:
    - `symbol_removal` or `constant_blinding` for a bundled sample;
    - `binary_hygiene` for any one selected ELF/PE copy.
@@ -96,6 +102,9 @@ Ghidra and JDK are under `tools/` in the full project.
 | Ghidra unavailable | Run `setup.bat` again; check `tools\windows\jdk25\bin\java.exe`; check `Java` in the app's status panel. |
 | Ghidra is slow on a large app | Select a single target, disable Ghidra for that run, or use a smaller sample. |
 | Antivirus quarantines a download | Allow the project folder or use the offline release; do not disable antivirus globally. |
+| "contains a character that cmd.exe would interpret" | Ghidra is refused when the project folder path contains `& | < > ^ % !` or a quote. Move the project to a plain folder such as `C:\ReverseShield\reverseshield-local-demo`. |
+| "Network (UNC) paths are not supported" | Copy the files from the network share to a local folder, then use that local path. |
+| "Large target … Ghidra may take several minutes" | Press **Skip Ghidra (lightweight tools only)**, or tick **Run Ghidra anyway** and raise the Ghidra time limit. |
 | Reports contain local paths | Use the sanitized export before sharing; see `docs/AI_CONTEXT.md` §10. |
 
 ## Safety reminder

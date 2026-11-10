@@ -81,9 +81,15 @@ smoke remains opt-in because it requires a separate local tool installation.
    them manually: `file`, `readelf`, `objdump`, `strings`, `nm`, and Ghidra
    headless (decompiler, call edges, CFG). `readelf` is ELF-only; PE is parsed
    by the built-in PE/COFF reader and the available PE-aware tools.
-4. **Inspect evidence** — metadata, functions, symbols, strings, pseudocode,
-   graphs and raw bounded output. Unavailable or truncated data is labelled,
-   never treated as a security result.
+4. **Read the report** — it opens with plain-language findings (names, debug
+   info, file paths, recovered code), then metadata, functions, symbols, strings, pseudocode,
+   graphs and raw bounded output, plus **content metrics** computed from the
+   file bytes (sections, executable/writable counts, entropy, imports/exports,
+   string categories, debug/symbol flags) and a tool-coverage table. ELF/PE
+   symbol tables and Ghidra symbols are counted separately. Unavailable or
+   truncated data is labelled **N/A**, never treated as zero or a security result.
+   Ghidra runs with a per-run time and CPU limit; targets over 8 MiB need an
+   explicit confirmation or the lightweight-tools option.
 5. **Transformation comparison** — profiles act on a run-local copy; the
    original is untouched:
    - **GNU symbol removal** (`strip --strip-unneeded`, bundled samples only);
@@ -100,6 +106,12 @@ smoke remains opt-in because it requires a separate local tool installation.
 The project-local Ghidra 12.2 and Temurin JDK 25 live under `tools/` in the full
 development copy. They are **not committed**; `setup.bat` downloads them, or the
 owner provides an offline release asset.
+
+### One-click demo
+
+Press **Run demo · Level 5** on the Operate page. It selects the bundled Level 5
+sample, runs every available tool and opens the report. It never runs on page
+load. The 3-minute event script is in `docs/event/PITCH_DECK_DRAFT.md`.
 
 ## Scope and safety
 
@@ -152,6 +164,10 @@ RUN_GHIDRA_TESTS=1 python3 -m unittest tests.test_engine -v
 | `docs/TEAM_TASKS_DAY1-4.md` | Naser → Zayed → Nomai → Faisal task plan |
 | `docs/GITHUB_WORKFLOW.md` | Beginner GitHub Desktop hand-off |
 | `docs/IS_CYBERNEXT_REQUIREMENTS.md` | Event requirements, positioning, gap analysis |
+| `docs/event/PITCH_DECK_DRAFT.md` | Day 2 pitch deck draft and 3-minute demo script |
+| `docs/security/DAY2_SECURITY_REVIEW.md` | Day 2 security review: findings, CWE/CVE, mitigations |
+| `docs/handoff/DAY2.md` | Day 2 hand-off (Zayed → Nomai) |
+| `docs/ROADMAP.md` | Planned features (hardening checks, CVE lookup) — not built yet |
 | `docs/ReverseShield_Project_Report_and_Plan.pdf` | Project report and plan |
 | `docs/ReverseShield_3-Day_Execution_Plan.pdf` | Earlier three-day plan |
 
