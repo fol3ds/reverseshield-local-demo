@@ -636,7 +636,7 @@ def build(out: Path = OUT, toc_pages: dict[str, str] | None = None) -> Path:
     bullets(doc, [
         'Clean Windows 10/11 manual acceptance of the Lite package, including setup.bat, run.bat, PE analysis and report download.',
         'Independent review of the final PDFs and claim map before external release.',
-        'A decision on GitHub publication versus private ZIP delivery; the current branch is not pushed or merged.',
+        'A merge decision for PR #6; no tag, release publication or event submission is part of this branch.',
         'IS CyberNext account, eligibility, declaration and submission checks by the owner.',
         'A stable tag and release notes after submission if the owner chooses to publish.',
     ])
@@ -677,7 +677,8 @@ def build(out: Path = OUT, toc_pages: dict[str, str] | None = None) -> Path:
         ('Faisal', 'Day 4 · Integration and release', 'OLLVM/QEMU scope, hardening evidence, packaging, documents, demo.'),
     ], widths=[28, 52, 92], font_size=8.8)
     para(doc, 'The repository uses day branches, pull requests and owner merges. The final Day 4 work is '
-              'on `feature/ollvm-protection` and remains local in this workspace. Teammates use Windows, '
+              'on `feature/ollvm-protection`, pushed to origin and opened as PR #6; it is not merged, '
+              'tagged or released. Teammates use Windows, '
               'so the package includes `setup.bat` and `run.bat`, and the report distinguishes Windows '
               'support from Windows manual acceptance.')
     h2(doc, 'Handover artefacts')
