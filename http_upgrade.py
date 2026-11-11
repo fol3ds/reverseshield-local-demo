@@ -27,7 +27,7 @@ UPLOAD_LIMIT = 256 * 1024 * 1024
 
 
 class UpgradeApiMixin:
-    server_version = 'ReverseShieldLocalDemo/0.3.0-team'
+    server_version = 'ReverseShieldLocalDemo/0.4.0-team'
 
     def setup(self):
         super().setup()
@@ -132,7 +132,7 @@ class UpgradeApiMixin:
                 self._send((ROOT / 'static' / path.rsplit('/', 1)[-1]).read_bytes(), assets[path])
             elif path == '/api/status':
                 tools = self.service.inventory()
-                self._json({'application': 'ReverseShield Local Workbench', 'version': '0.3.0-team',
+                self._json({'application': 'ReverseShield Local Workbench', 'version': '0.4.0-team',
                             'mode': 'static_only', 'tools': tools,
                             'dynamic_analysis': {'enabled': False, 'state': 'disabled_future_extension'},
                             'protection': {'available': bool(shutil.which('strip')), 'tool': 'GNU strip', 'scope': 'bundled_samples_only', 'obfuscation': False,

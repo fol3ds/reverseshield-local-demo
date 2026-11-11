@@ -212,7 +212,7 @@ def create_server() -> ThreadingHTTPServer:
 def main() -> None:
     server = create_server()
     host, port = server.server_address
-    print(f"ReverseShield Workbench v0.3.0-team listening on http://{host}:{port}", flush=True)
+    print(f"ReverseShield Workbench v0.4.0-team listening on http://{host}:{port}", flush=True)
     print("Static ELF/PE analysis only. The server does not execute selected binaries.")
     print("Press Ctrl+C to stop.")
     try:

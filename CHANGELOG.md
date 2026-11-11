@@ -1,5 +1,20 @@
 # Changelog
 
+## Day 4 (Faisal) — 11 November 2026
+
+- Integrated the reviewed Day 2 and Day 3 branches into `main`; the Day 3 tree is
+  now the current source baseline.
+- Fixed the Windows CI path assertion so the Day 2 branch passes on GitHub
+  Actions as well as Fedora.
+- Normalized line endings (LF for source/docs, CRLF for `.bat`/`.ps1`) and
+  restored the executable bit on `run.sh`.
+- Updated release metadata to `0.4.0-team` and synchronized the test count to
+  **98 tests** in the README and event requirements.
+- Fedora verification: 98 tests, 1 skip with Ghidra enabled. GitHub Actions:
+  Windows and Fedora jobs pass on the merged `main` commit.
+- Remaining Day 4 gates: final documents, demo video, Lite release asset with
+  SHA-256, Git tag, and event submission.
+
 ## Day 3 (Nomai) — 11 November 2026
 
 - Authenticate API reads and legacy writes; bootstrap token in the local page.

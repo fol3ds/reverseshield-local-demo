@@ -144,11 +144,12 @@ load. The 3-minute event script is in `docs/event/PITCH_DECK_DRAFT.md`.
 python3 -m unittest discover -s tests -v
 ```
 
-On Windows use `py -3` instead of `python3`. The recorded Day 1 Windows run
-completed **65 tests: 48 passed, 17 skipped, 0 failed** with project tool
-bundles available; the Ghidra opt-in run completed **7 tests: 7 passed**. Counts
-can vary when optional tools are missing. Tests cover ELF/PE parsing, discovery,
-RPM ingestion, job orchestration, comparison, API and UI contracts. They do not
+On Windows use `py -3` instead of `python3`. The current suite has **98 tests**.
+With the project toolchain and Ghidra enabled on Fedora, **98 tests pass with 1
+skip** (the native-Windows PE walker test). Without Ghidra, 2 tests are skipped.
+GitHub Actions runs the suite on both Windows and Fedora; platform-specific skips
+are reported in the job output. Tests cover ELF/PE parsing, discovery, RPM
+ingestion, job orchestration, comparison, API and UI contracts. They do not
 execute the sample programs. The real Ghidra test is opt-in:
 
 ```bash
@@ -173,7 +174,7 @@ RUN_GHIDRA_TESTS=1 python3 -m unittest tests.test_engine -v
 
 ## Version
 
-`0.3.0-team` — see `CHANGELOG.md`.
+`0.4.0-team` — see `CHANGELOG.md`.
 
 
 ## Day 3 privacy and sharing
