@@ -1,6 +1,8 @@
-"""Definitions and public metadata for five self-authored samples.
+"""Definitions and public metadata for six self-authored samples.
 
-These are the only targets for the source-level protection profiles. The
+The first five support source-level protection profiles. The sixth is a
+Linux-hardened build of the Level 5 policy engine, selectable for read-only
+static analysis and binary hygiene but not recompilable via source profiles.
 binaries are built from ``samples/src`` by ``build_samples.py``. Inputs are
 sample IDs and definitions; outputs are static metadata and paths for analysis.
 The binaries are never executed by the workbench or its tests. Add exercises
@@ -64,6 +66,16 @@ SAMPLES = [
         "topics": ["multiple files", "enums", "structs", "interprocedural symbols"],
         "sources": ["samples/src/level-5/main.c", "samples/src/level-5/rules.c", "samples/src/level-5/policy.h"],
         "binary": "samples/bin/level-5.exe" if os.name == "nt" and (SAMPLE_ROOT / "bin/level-5.exe").is_file() else "samples/bin/level-5.elf",
+    },
+    {
+        "id": "level-5-hardened",
+        "name": "Level 5 Hardened · Policy Engine",
+        "complexity": "Mitigation comparison",
+        "description": "Linux ELF build of the self-authored Level 5 policy, with PIE, full RELRO, stack canary, FORTIFY and non-executable stack. Analyze only; no source obfuscation on this fixture.",
+        "topics": ["NX", "PIE", "RELRO", "canary", "FORTIFY"],
+        "sources": ["samples/src/level-5-hardened/main.c", "samples/src/level-5/rules.c", "samples/src/level-5/policy.h"],
+        "binary": "samples/bin/level-5-hardened.elf",
+        "source_transform_supported": False,
     },
 ]
 

@@ -38,7 +38,7 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(result['strings']['removed'], ['old'])
         self.assertEqual(result['strings']['added'], ['new'])
         self.assertEqual(result['symbols']['removed'], ['named_fn'])
-        functions = next(m for m in result['metrics'] if m['name'] == 'Exported functions')
+        functions = next(m for m in result['metrics'] if m['name'] == 'Functions identified by selected tools')
         self.assertIsNone(functions['before'])
         self.assertIsNone(functions['delta'])
         self.assertIn('not a resistance score', ' '.join(result['limitations']))
@@ -55,6 +55,27 @@ def inventory_baseline():
 
 
 class JobTests(unittest.TestCase):
+    def test_hardened_fixture_rejects_source_transforms_but_allows_analysis(self):
+        workflow = workflow_module()
+        target = ROOT / 'samples/bin/level-5-hardened.elf'
+        with tempfile.TemporaryDirectory() as temp:
+            service = workflow.Workbench(ROOT, runs_root=Path(temp), analyzer=static_baseline, inventory_provider=inventory_baseline)
+            selection = service.add_selection({'app': {'name': 'Hardened Level 5'}, 'targets': [
+                {'target_id': 'one', 'absolute_path': str(target), 'relative_path': target.name,
+                 'size_bytes': target.stat().st_size, 'analyzable': True}
+            ]}, sample_id='level-5-hardened')
+            try:
+                for operation, profile in [('protect_compare', 'constant_blinding'), ('ollvm_compare', 'ollvm_source')]:
+                    with self.subTest(operation=operation):
+                        with self.assertRaisesRegex(ValueError, 'analysis-only'):
+                            service.start_job(selection['selection_id'], ['one'], ['readelf'], operation,
+                                              authorized=True, profile=profile)
+                job = service.start_job(selection['selection_id'], ['one'], ['readelf'], 'analyze', authorized=True)
+                service.wait(job, timeout=30)
+                self.assertEqual(service.get_job(job)['status'], 'completed')
+            finally:
+                service.close()
+
     def test_demo_obfuscation_builds_protected_sample_and_preserves_original(self):
         workflow = workflow_module()
         target = ROOT / 'samples/bin/level-2.elf'

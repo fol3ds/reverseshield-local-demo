@@ -222,7 +222,9 @@ def setup_document(title: str, header_right: str = "v1.0 · November 2026") -> D
     return doc
 
 
-def add_cover(doc: Document, title: str, subtitle: str, kicker: str, meta: list[tuple[str, str]]) -> None:
+def add_cover(doc: Document, title: str, subtitle: str, kicker: str, meta: list[tuple[str, str]],
+              note_title: str = "How to read this document",
+              note_text: str | None = None) -> None:
     bar = doc.add_table(rows=1, cols=1)
     bar.autofit = False
     bar.alignment = WD_TABLE_ALIGNMENT.LEFT
@@ -275,12 +277,17 @@ def add_cover(doc: Document, title: str, subtitle: str, kicker: str, meta: list[
     spacer(doc, 10)
     add_table(doc, ["Document", "Value"], meta, widths=[38, 134], font_size=9.2, header_fill=NAVY)
     spacer(doc, 8)
+    if note_text is None:
+        note_text = (
+            "This is an execution document, not a marketing description. Every task has an output and an acceptance check. "
+            "Analyzed targets are never executed on the host; optional QEMU runs only "
+            "separate self-authored deterministic drivers. "
+            "Security claims are limited to observed artifact changes."
+        )
     add_callout(
         doc,
-        "How to read this document",
-        "This is an execution document, not a marketing description. Every task has an output and an acceptance check. "
-        "The project remains a static-analysis workbench; protected samples are compiled but never executed. "
-        "Security claims are limited to observed artifact changes.",
+        note_title,
+        note_text,
         fill="ECFEFF",
         accent=CYAN,
     )

@@ -6,8 +6,9 @@ an ELF/PE file, an RPM package, an upload or a bundled sample; runs bounded
 static-analysis tools with a live event stream; and compares a copy
 before/after one of three transformations.
 
-It is **not** a protection product, an obfuscator, a malware sandbox, or a
-reverse-engineering-resistance benchmark.
+It is **not** a production protection product, a malware sandbox, or a
+reverse-engineering-resistance benchmark. It includes an optional, sample-only
+OLLVM transformation and a QEMU behaviour check for that demonstration.
 
 ## Quick start
 
@@ -41,8 +42,10 @@ Or `./run.sh`. Open the printed loopback address. The server binds only to
 loopback, requires a per-session token for state-changing calls and rejects
 foreign origins. Stop it with `Ctrl+C`.
 
-The five sample binaries are included under `samples/bin/`. To rebuild them from
-the self-authored C sources without executing them, run:
+The **six** sample ELF binaries are included under `samples/bin/`: five
+original source-transformable samples and a separate `level-5-hardened` ELF for
+static mitigation-property comparison. To rebuild them from self-authored C
+sources without executing them, run:
 
 ```bash
 python3 build_samples.py
@@ -85,9 +88,11 @@ smoke remains opt-in because it requires a separate local tool installation.
    info, file paths, recovered code), then metadata, functions, symbols, strings, pseudocode,
    graphs and raw bounded output, plus **content metrics** computed from the
    file bytes (sections, executable/writable counts, entropy, imports/exports,
-   string categories, debug/symbol flags) and a tool-coverage table. ELF/PE
-   symbol tables and Ghidra symbols are counted separately. Unavailable or
-   truncated data is labelled **N/A**, never treated as zero or a security result.
+   string categories, debug/symbol flags), **exploit-mitigation properties**
+   (NX/DEP, PIE/ASLR, RELRO, stack canary, FORTIFY; PE ASLR/DEP/CFG and security
+   cookie) and a tool-coverage table. ELF/PE symbol tables and Ghidra symbols are
+   counted separately. Unavailable or truncated data is labelled **N/A**, never
+   treated as zero or a security result.
    Ghidra runs with a per-run time and CPU limit; targets over 8 MiB need an
    explicit confirmation or the lightweight-tools option.
 5. **Transformation comparison** — profiles act on a run-local copy; the
@@ -96,6 +101,15 @@ smoke remains opt-in because it requires a separate local tool installation.
    - **Demo constant blinding** — sample sources are transformed so integer
      constants become volatile-key XOR expressions and an opaque guard is added,
      then rebuilt (bundled samples only; demonstration-grade);
+   - **OLLVM source obfuscation** — the project-local xollvm toolchain rebuilds a
+     bundled sample with control-flow flattening, bogus control flow,
+     instruction substitution and string encryption, then compares the original
+     and protected copy. Deterministic sample drivers are run only inside a
+     QEMU micro-VM with no disk and no network; the host never executes the
+     sample. These are **separate driver builds**, not the downloadable
+     protected ELF. `driver_vectors_matched` records that narrow result;
+     `behavior_verified` stays false for the downloadable artifact. This is
+     not a guarantee of security;
    - **Binary metadata hygiene** — `strip --strip-all` plus `objcopy` removal of
      `.comment`, `.annobin.notes`, `.gnu.build.attributes` and
      `.note.gnu.build-id` on a copy of any selected ELF/PE. This is metadata
@@ -107,6 +121,21 @@ The project-local Ghidra 12.2 and Temurin JDK 25 live under `tools/` in the full
 development copy. They are **not committed**; `setup.bat` downloads them, or the
 owner provides an offline release asset.
 
+The optional OLLVM profile needs the xollvm/LLVM 22 toolchain. On Fedora/Linux:
+
+```bash
+bash scripts/setup_ollvm.sh
+```
+
+It downloads about 101 MiB into `tools/xollvm/` and verifies the archive
+checksum. The project-local xollvm toolchain is Linux-only. On native Windows, **OLLVM
+source transforms and QEMU driver verification are unsupported**; the profile
+reports unavailable. Static ELF/PE analysis and supported copy-only operations
+remain separate features and still need a clean Windows manual test. The Lite
+ZIP does not include xollvm or QEMU. The five original sample sources are the
+only OLLVM-eligible inputs; the sixth hardened fixture is selectable for static
+analysis, not a source transform. OLLVM cannot transform an arbitrary ELF/PE.
+
 ### One-click demo
 
 Press **Run demo · Level 5** on the Operate page. It selects the bundled Level 5
@@ -115,19 +144,24 @@ load. The 3-minute event script is in `docs/event/PITCH_DECK_DRAFT.md`.
 
 ## Scope and safety
 
-- **Static analysis only. Targets are never executed or emulated**, including
-  uploaded files, bundled samples, Windows PE files and installed applications
-  such as Easy Effects.
+- **Host execution is disabled for analysed targets**, including uploaded files,
+  bundled samples, Windows PE files and installed applications such as Easy
+  Effects. The optional OLLVM profile builds a copy of a bundled sample and
+  exercises **only deterministic test drivers inside a QEMU micro-VM with no
+  disk and no network**. It does not execute installed or third-party targets.
 - **Dynamic analysis is disabled.** DEB and APK inputs are not supported. RPM
   payloads are unpacked as data, never installed or script-executed; RPM
   ingestion is Linux-only.
 - **Source-level protection is restricted to bundled samples.** Installed or
-  third-party applications are analysed read-only and never modified.
+  third-party applications are analysed read-only and never modified. OLLVM
+  cannot transform a binary-only ELF/PE; arbitrary files remain analysis-only.
 - **Binary metadata hygiene** runs on a copy of any selected ELF/PE; it removes
   metadata only, not code. It is not obfuscation or a protection guarantee.
 - GNU symbol removal is a **baseline transformation, not obfuscation**. The demo
-  transformer is also **demonstration-grade only**; none of the profiles
-  establishes behavioural equivalence or resistance.
+  transformer is also **demonstration-grade only**. OLLVM is a real source
+  transformation, but it is not a security proof: Ghidra can still recover
+  logic, and the QEMU check covers only deterministic drivers. None of the
+  profiles establishes full behavioural equivalence or resistance.
 - Loopback plus temporary snapshots are not a malware sandbox. Use only files
   you own or are authorised to assess.
 - Local tools (especially decompilers) parse untrusted bytes and may themselves
@@ -144,9 +178,11 @@ load. The 3-minute event script is in `docs/event/PITCH_DECK_DRAFT.md`.
 python3 -m unittest discover -s tests -v
 ```
 
-On Windows use `py -3` instead of `python3`. The current suite has **98 tests**.
-With the project toolchain and Ghidra enabled on Fedora, **98 tests pass with 1
-skip** (the native-Windows PE walker test). Without Ghidra, 2 tests are skipped.
+On Windows use the explicit compatible launcher (for example `py -3.14`),
+not `py -3` blindly. The final verified suite result for this local candidate
+belongs in `docs/evidence/verification.json`. The GitHub Actions run on merged
+`main` is not a test of the unmerged Day 4 branch; native-Windows manual setup
+and UI checks remain outstanding.
 GitHub Actions runs the suite on both Windows and Fedora; platform-specific skips
 are reported in the job output. Tests cover ELF/PE parsing, discovery, RPM
 ingestion, job orchestration, comparison, API and UI contracts. They do not
@@ -174,7 +210,7 @@ RUN_GHIDRA_TESTS=1 python3 -m unittest tests.test_engine -v
 
 ## Version
 
-`0.4.0-team` — see `CHANGELOG.md`.
+`0.5.0-team` — see `CHANGELOG.md`.
 
 
 ## Day 3 privacy and sharing
@@ -186,7 +222,8 @@ fetch-site checks protect against foreign websites. This is local browser
 request protection, not user accounts, enterprise IAM or protection from a
 malicious process running as the same OS user.
 
-Analysis reads target bytes locally and never runs the target. The application
+Analysis reads target bytes locally and never runs the target on the host. The optional
+OLLVM check runs only deterministic sample drivers inside QEMU. The application
 has no telemetry or cloud analysis upload. Setup downloads third-party tools;
 developer security scanners may download rules. Inputs, reports and temporary
 analysis workspaces live in `runs/` until manually removed. Stop the server

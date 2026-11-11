@@ -20,7 +20,9 @@ from pathlib import Path
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
-SAMPLES = sorted((ROOT / "samples/bin").glob("level-*.elf"))
+SAMPLES = sorted(path for path in (ROOT / "samples/bin").glob("level-*.elf")
+                 if path.stem != "level-5-hardened")
+HARDENED_SAMPLE = ROOT / "samples/bin/level-5-hardened.elf"
 PE_FIXTURE = ROOT / "tests/fixtures/minimal-pe64.exe"
 
 
@@ -134,6 +136,12 @@ class MetricParserTests(unittest.TestCase):
                                          text=True, check=True, env={**os.environ, "LC_ALL": "C"}).stdout
                     undefined = [line for line in dyn.splitlines() if " UND " in line and len(line.split()) >= 8]
                     self.assertEqual(first["imports"]["count"], len(undefined))
+
+    @unittest.skipUnless(HARDENED_SAMPLE.is_file(), "hardened sample is not built")
+    def test_hardened_sample_has_no_debug_sections(self):
+        first = self.metrics.content_metrics(HARDENED_SAMPLE)
+        self.assertEqual(first['format'], 'ELF')
+        self.assertFalse(first['debug']['debug_sections_present'])
 
     def test_pe_fixture_and_synthetic_import_export_tables(self):
         fixture = self.metrics.content_metrics(PE_FIXTURE)
@@ -368,8 +376,8 @@ class LargeTargetAndComparisonTests(unittest.TestCase):
         result = self.workflow.compare_reports(before, after)
         by_name = {metric["name"]: metric for metric in result["metrics"]}
         self.assertEqual(by_name["ELF/PE symbol-table entries"]["after"], 0, "stripped ELF symtab is an observed zero")
-        self.assertIsNone(by_name["Extracted strings"]["before"], "strings tool not selected: N/A, not zero")
-        self.assertIsNone(by_name["Extracted strings"]["delta"])
+        self.assertIsNone(by_name["Strings reported by selected tools"]["before"], "strings tool not selected: N/A, not zero")
+        self.assertIsNone(by_name["Strings reported by selected tools"]["delta"])
         self.assertEqual(by_name["Debug sections"]["before"], "present")
         self.assertEqual(by_name["Debug sections"]["after"], "absent")
         self.assertEqual(by_name["File entropy (bits/byte)"]["delta"], 0.4)
@@ -377,7 +385,9 @@ class LargeTargetAndComparisonTests(unittest.TestCase):
         summary = result["summary"]
         self.assertTrue(any(line.startswith("Debug sections") for line in summary["changed"]))
         self.assertTrue(any(line.startswith("Imported functions") for line in summary["unchanged"]))
-        self.assertIn("Extracted strings", summary["not_collected"])
+        self.assertIn("Strings reported by selected tools", summary["not_collected"])
+        self.assertIn("Names reported by selected tools (includes Ghidra labels)", by_name)
+        self.assertNotIn("Parsed symbol entries", by_name)
         self.assertTrue(result["functions"]["available"])
         self.assertEqual(result["functions"]["matched_by_address"], 1)
         self.assertIn("N/A", " ".join(result["limitations"]))

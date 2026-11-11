@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.5.0-team — local Day 4 candidate (unmerged, unpublished)
+
+- Six selectable ELF samples: five original source-transformable samples and
+  one `level-5-hardened` analysis-only fixture. Measured static NX/PIE/RELRO,
+  canary and FORTIFY evidence is in `docs/evidence/hardening-level5.json`;
+  observed mitigation properties do not prove security or equivalence.
+- All five original sample-driver pairs produced matching deterministic
+  transcripts in a no-disk/no-network QEMU guest; this is bounded test-vector
+  evidence, not general behavioral equivalence. See
+  `docs/evidence/ollvm-five-qemu.json`.
+- Compare labels now identify tool-derived counts and say `N/A` means
+  unmeasured, not zero. The UI and backend identify native-Windows OLLVM/QEMU
+  as unavailable; the Windows static workbench still needs a clean manual run.
+- Fixed the backend operation/profile mismatch so an analysis-labelled job
+  cannot dispatch a source transformation. Added HTTP and worker-queue regression checks.
+- Scoped QEMU results to separate deterministic driver builds:
+  `driver_vectors_matched` is separate from `behavior_verified: false` on the
+  downloadable artifact; it was not the executable tested in the guest.
+- The Windows Lite ZIP is a **local candidate only**. Package selection uses
+  indexed files and excludes raw scanner output, old screenshots and video.
+  The sanitized evidence map and acceptance matrix are in `docs/evidence/`.
+- The `v0.4.0-team` GitHub draft release has older assets and does not contain
+  this local work. No event sign-in, upload or submission has been performed.
+
+### Earlier 0.5.0-team prototype work — OLLVM source obfuscation
+
+- Added an optional xollvm/LLVM 22 profile for the bundled self-authored
+  samples: control-flow flattening, bogus control flow, instruction substitution
+  and string encryption.
+- Added a QEMU micro-VM behaviour check with no disk and no network. It compares
+  deterministic original/protected drivers and is required for a clean status.
+- Source-only restriction is explicit: arbitrary ELF/PE targets remain
+  analysis-only, and OLLVM cannot be applied without source.
+- Added comparison/UI evidence, a project-local setup script, third-party
+  attribution, and tests. An earlier prototype run recorded 105 tests with
+  1 skip; see the current verification file for the Day 4 candidate.
+- Added static exploit-mitigation checks for ELF and PE: NX/DEP, PIE/ASLR,
+  RELRO, stack canary, FORTIFY and PE Control Flow Guard. These are observed
+  properties, not a security score.
+- The OLLVM profile is a real transformation, but not a security proof; Ghidra
+  can still recover code and the QEMU check covers only deterministic drivers.
+
 ## Day 4 (Faisal) — 11 November 2026
 
 - Integrated the reviewed Day 2 and Day 3 branches into `main`; the Day 3 tree is

@@ -1,0 +1,125 @@
+{
+  "observed_at": "2026-11-11T20:50:57+03:00",
+  "method": "Read ELF bytes with hardening.analyze_hardening; binaries were not executed",
+  "samples": [
+    {
+      "sample_id": "level-5",
+      "sha256": "7963c8cc2fdf8e09577222d8324d556e2284b5487a816bc8d053f8eef51984f6",
+      "bytes": 15904,
+      "mode": "0o600",
+      "hardening": {
+        "format": "ELF",
+        "checks": {
+          "nx": {
+            "label": "NX / DEP",
+            "state": "present",
+            "evidence": "PT_GNU_STACK is non-executable (PF_X clear)."
+          },
+          "pie": {
+            "label": "PIE / ASLR",
+            "state": "absent",
+            "evidence": "ET_EXEC is a fixed-address executable."
+          },
+          "relro": {
+            "label": "RELRO",
+            "state": "partial",
+            "evidence": "PT_GNU_RELRO is present, but BIND_NOW is not set."
+          },
+          "canary": {
+            "label": "Stack canary",
+            "state": "absent",
+            "evidence": "No stack-canary symbol found in the parsed symbol tables."
+          },
+          "fortify": {
+            "label": "FORTIFY",
+            "state": "absent",
+            "evidence": "No *_chk or __fortify_fail symbol found in the parsed symbol tables."
+          }
+        },
+        "summary": {
+          "present": 1,
+          "absent": 3,
+          "partial": 1,
+          "unknown": 0,
+          "not_applicable": 0
+        },
+        "evidence": {
+          "elf_type": 2,
+          "dynamic": true,
+          "bind_now": false,
+          "symbols_parsed": true,
+          "stack_segment": true,
+          "relro_segment": true
+        },
+        "limitations": [
+          "These are static properties of the file, not a security score; presence or absence does not prove exploitability.",
+          "A missing mitigation is not a vulnerability by itself, and a present mitigation is not a security guarantee.",
+          "Compiler, linker, loader and kernel defaults vary by platform and build configuration.",
+          "This check does not execute, fuzz or dynamically test the target."
+        ],
+        "input_truncated": false,
+        "errors": []
+      }
+    },
+    {
+      "sample_id": "level-5-hardened",
+      "sha256": "2ac29fa1e499fa27bb34c6ff0d90dd2a3f9150cc3858ca3e3d38fb62cc144044",
+      "bytes": 12792,
+      "mode": "0o600",
+      "hardening": {
+        "format": "ELF",
+        "checks": {
+          "nx": {
+            "label": "NX / DEP",
+            "state": "present",
+            "evidence": "PT_GNU_STACK is non-executable (PF_X clear)."
+          },
+          "pie": {
+            "label": "PIE / ASLR",
+            "state": "present",
+            "evidence": "ET_DYN with DF_1_PIE set."
+          },
+          "relro": {
+            "label": "RELRO",
+            "state": "present",
+            "evidence": "PT_GNU_RELRO and BIND_NOW are present (full RELRO)."
+          },
+          "canary": {
+            "label": "Stack canary",
+            "state": "present",
+            "evidence": "Found __stack_chk_fail"
+          },
+          "fortify": {
+            "label": "FORTIFY",
+            "state": "present",
+            "evidence": "Found __printf_chk"
+          }
+        },
+        "summary": {
+          "present": 5,
+          "absent": 0,
+          "partial": 0,
+          "unknown": 0,
+          "not_applicable": 0
+        },
+        "evidence": {
+          "elf_type": 3,
+          "dynamic": true,
+          "bind_now": true,
+          "symbols_parsed": true,
+          "stack_segment": true,
+          "relro_segment": true
+        },
+        "limitations": [
+          "These are static properties of the file, not a security score; presence or absence does not prove exploitability.",
+          "A missing mitigation is not a vulnerability by itself, and a present mitigation is not a security guarantee.",
+          "Compiler, linker, loader and kernel defaults vary by platform and build configuration.",
+          "This check does not execute, fuzz or dynamically test the target."
+        ],
+        "input_truncated": false,
+        "errors": []
+      }
+    }
+  ],
+  "interpretation": "Static property evidence only, not a security score or behavior-equivalence proof."
+}

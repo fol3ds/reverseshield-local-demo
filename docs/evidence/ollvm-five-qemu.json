@@ -1,0 +1,118 @@
+{
+  "observed_at": "2026-11-11T21:04:37+03:00",
+  "scope": "separate_deterministic_drivers",
+  "artifact_behavior_verified": false,
+  "samples": [
+    {
+      "sample_id": "level-1",
+      "matched": true,
+      "scope": "separate_deterministic_drivers",
+      "artifact_behavior_verified": false,
+      "exit_codes": {
+        "original": 0,
+        "protected": 0
+      },
+      "qemu_return_code": 0,
+      "output_sha256": "3b5a5b40fc2a41bc88710afccdface2b466f4e323f428cd553358243bf51a104",
+      "initramfs_sha256": "869899bb6afa153863c03f5add2b37e28211be6de69d9c00b3840e16fa2b52ad",
+      "duration_seconds": 5.84,
+      "driver_sha256": {
+        "original": "f9acd983ee9555426506b170fdee2305510d13b91a10dd0813a5362f37fe3352",
+        "protected": "108f366cbbfcdaaea926e70caf8b3a758c4543136eced804f76d219065c110ca"
+      },
+      "transcript_sha256": {
+        "original": "3b5a5b40fc2a41bc88710afccdface2b466f4e323f428cd553358243bf51a104",
+        "protected": "3b5a5b40fc2a41bc88710afccdface2b466f4e323f428cd553358243bf51a104"
+      }
+    },
+    {
+      "sample_id": "level-2",
+      "matched": true,
+      "scope": "separate_deterministic_drivers",
+      "artifact_behavior_verified": false,
+      "exit_codes": {
+        "original": 0,
+        "protected": 0
+      },
+      "qemu_return_code": 0,
+      "output_sha256": "118bbe7e00cb34fdaee4443222932d6197290d86151061429ace9c3f5b9dae01",
+      "initramfs_sha256": "5cbca35fc39c8812deb799a6afac3d72c8175b68abaf32b909905df7f4db0d76",
+      "duration_seconds": 5.84,
+      "driver_sha256": {
+        "original": "c31874ba506d43cb4dd9c2a8261dec656a30231c39a60e1174e96bcf80349337",
+        "protected": "aad63c103e7640d37a67e303434a67846416e255bdcb99bcf5b530eaaebdce8f"
+      },
+      "transcript_sha256": {
+        "original": "118bbe7e00cb34fdaee4443222932d6197290d86151061429ace9c3f5b9dae01",
+        "protected": "118bbe7e00cb34fdaee4443222932d6197290d86151061429ace9c3f5b9dae01"
+      }
+    },
+    {
+      "sample_id": "level-3",
+      "matched": true,
+      "scope": "separate_deterministic_drivers",
+      "artifact_behavior_verified": false,
+      "exit_codes": {
+        "original": 0,
+        "protected": 0
+      },
+      "qemu_return_code": 0,
+      "output_sha256": "0f9bf7d0f04835e7ed052413e2dfa4b050acb7dcc4ebd19b1bbfa95aa776f0b5",
+      "initramfs_sha256": "53034910542afc5aff8071d4c3e8f58dfa1a8e4fc194fcf4382cc411182a0303",
+      "duration_seconds": 5.74,
+      "driver_sha256": {
+        "original": "213f88ed1d92792e6494a6d0b061e46315c2d360b39ff04a73aa0407f7c364fb",
+        "protected": "02c85fd6d2568f8816a46ca946534b264914989ec841e04963b6f90a0c7e144c"
+      },
+      "transcript_sha256": {
+        "original": "0f9bf7d0f04835e7ed052413e2dfa4b050acb7dcc4ebd19b1bbfa95aa776f0b5",
+        "protected": "0f9bf7d0f04835e7ed052413e2dfa4b050acb7dcc4ebd19b1bbfa95aa776f0b5"
+      }
+    },
+    {
+      "sample_id": "level-4",
+      "matched": true,
+      "scope": "separate_deterministic_drivers",
+      "artifact_behavior_verified": false,
+      "exit_codes": {
+        "original": 0,
+        "protected": 0
+      },
+      "qemu_return_code": 0,
+      "output_sha256": "919982752e56e4762fb39b69210976a5aae805d9decce765f8c31b482ac7ec84",
+      "initramfs_sha256": "a6330871d7b11db9ecf25a9af143d01e0b54c1ce63c5cc030e599f3a5ece08a0",
+      "duration_seconds": 5.87,
+      "driver_sha256": {
+        "original": "7474e58624326ead51b3538168bcf88fbed75234dce530708455ced775c8b50a",
+        "protected": "1a83e9c4a7ed3cbe38ccd6585110690c173ff6d9201f4a78211fdc23a392927a"
+      },
+      "transcript_sha256": {
+        "original": "919982752e56e4762fb39b69210976a5aae805d9decce765f8c31b482ac7ec84",
+        "protected": "919982752e56e4762fb39b69210976a5aae805d9decce765f8c31b482ac7ec84"
+      }
+    },
+    {
+      "sample_id": "level-5",
+      "matched": true,
+      "scope": "separate_deterministic_drivers",
+      "artifact_behavior_verified": false,
+      "exit_codes": {
+        "original": 0,
+        "protected": 0
+      },
+      "qemu_return_code": 0,
+      "output_sha256": "d0bae9fcd0b46850acb4c0731159770cdef89b43503a8e4db138d645b976783f",
+      "initramfs_sha256": "00b0ec33f63af95d506bf4fd37e61d476c079ff2b749117e4aae79d84ac945e8",
+      "duration_seconds": 6.08,
+      "driver_sha256": {
+        "original": "d8f08e2c42759b46127ef2fa56ac8aaad9362218517827bb099392781abb4ba3",
+        "protected": "465fdffbd369261144374d5455f081857b7dab6cea2479615f244b5c613ff1df"
+      },
+      "transcript_sha256": {
+        "original": "d0bae9fcd0b46850acb4c0731159770cdef89b43503a8e4db138d645b976783f",
+        "protected": "d0bae9fcd0b46850acb4c0731159770cdef89b43503a8e4db138d645b976783f"
+      }
+    }
+  ],
+  "interpretation": "Five original self-authored sample drivers only, inside a no-disk/no-network QEMU guest. These separate driver builds are NOT the downloadable protected.elf; that artifact was not executed or behavior-verified. Matching deterministic vectors do not prove full behavioral equivalence or security."
+}

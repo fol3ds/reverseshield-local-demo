@@ -102,6 +102,9 @@ class Workbench:
         selection = copy.deepcopy(discovered)
         selection['selection_id'] = secrets.token_hex(12)
         selection['sample_id'] = sample_id
+        if sample_id is not None:
+            sample = get_sample(sample_id)
+            selection['source_transform_supported'] = sample.get('source_transform_supported', True) if sample else False
         selection.setdefault('runtime', {'dependencies': [], 'scanned': False})
         selection.setdefault('warnings', [])
         for target in selection['targets']:
@@ -120,16 +123,18 @@ class Workbench:
     def start_job(self, selection_id, target_ids, tools, operation, *, authorized=False, profile=None, options=None):
         if authorized is not True:
             raise ValueError('Confirm that the input is benign and you are authorized to analyze it.')
-        if operation not in {'analyze', 'strip_compare', 'protect_compare', 'binary_compare'}:
+        if operation not in {'analyze', 'strip_compare', 'protect_compare', 'binary_compare', 'ollvm_compare'}:
             raise ValueError('Unsupported operation. Dynamic execution is disabled.')
-        if operation == 'strip_compare':
-            profile = 'symbol_removal'
-        elif operation == 'protect_compare':
-            profile = profile or 'constant_blinding'
-        elif operation == 'binary_compare':
-            profile = 'binary_hygiene'
-        if operation != 'analyze' and profile not in {'symbol_removal', 'constant_blinding', 'binary_hygiene'}:
-            raise ValueError('Unknown protection profile.')
+        expected_profiles = {'analyze': None, 'strip_compare': 'symbol_removal',
+                             'protect_compare': 'constant_blinding',
+                             'binary_compare': 'binary_hygiene',
+                             'ollvm_compare': 'ollvm_source'}
+        expected_profile = expected_profiles[operation]
+        # Validate the caller's pair BEFORE normalizing defaults or queuing work.
+        # Worker dispatch uses the normalized profile, so analyze must have none.
+        if profile is not None and profile != expected_profile:
+            raise ValueError('Invalid operation/profile pairing; analysis cannot apply a transformation.')
+        profile = expected_profile
         if not isinstance(target_ids, list) or not target_ids or len(target_ids) > 16 or not all(isinstance(x, str) for x in target_ids):
             raise ValueError('Choose between 1 and 16 ELF/PE targets.')
         if not isinstance(tools, list) or not tools or not all(isinstance(x, str) for x in tools):
@@ -163,9 +168,20 @@ class Workbench:
                 sample = get_sample(selection.get('sample_id'))
                 if sample is None or len(targets) != 1 or Path(targets[0]['absolute_path']).resolve() != (self.root / sample['binary']).resolve():
                     raise ValueError('Demo protection is restricted to the bundled self-authored samples.')
+                if sample.get('source_transform_supported') is False:
+                    raise ValueError('This hardened fixture is analysis-only; use the original Level 5 sample for source transforms.')
             elif operation == 'binary_compare':
                 if len(targets) != 1:
                     raise ValueError('Binary hygiene requires exactly one selected ELF/PE target.')
+            elif operation == 'ollvm_compare':
+                sample = get_sample(selection.get('sample_id'))
+                if sample is None or len(targets) != 1 or Path(targets[0]['absolute_path']).resolve() != (self.root / sample['binary']).resolve():
+                    raise ValueError('OLLVM protection is restricted to the bundled self-authored samples.')
+                if sample.get('source_transform_supported') is False:
+                    raise ValueError('This hardened fixture is analysis-only; use the original Level 5 sample for source transforms.')
+                from ollvm_protection import available as ollvm_available
+                if not ollvm_available(self.root):
+                    raise ValueError('The project-local xollvm toolchain is unavailable.')
             if len(self.jobs) >= 32:
                 raise ValueError('Session job limit reached. Export reports and restart before another run.')
             if sum(j['status'] not in TERMINAL_STATES for j in self.jobs.values()) >= 4:
@@ -297,6 +313,55 @@ class Workbench:
                 reports.append({'analysis': after})
                 job['result']['after'] = after
                 job['result']['comparison'] = compare_reports(before, after)
+            elif job['profile'] == 'ollvm_source':
+                if job['_cancel'].is_set():
+                    raise InterruptedError('Cancelled before OLLVM protection.')
+                from ollvm_protection import build_protected
+                from behavior_qemu import run_behavior
+                before = reports[0]['analysis']
+                self._emit(job, {'type': 'tool_start', 'tool': 'ollvm', 'phase': 'transform',
+                                 'message': 'xollvm: compile a copy with control-flow and string obfuscation.'})
+                built = build_protected(self.root, job['sample_id'], job['_directory'] / 'ollvm')
+                protected = Path(built['path'])
+                self._emit(job, {'type': 'tool_end', 'tool': 'ollvm', 'phase': 'transform',
+                                 'message': f"OLLVM-protected copy created ({built['sha256'][:16]}…); the target was not executed on the host."})
+                behavior = {'available': False, 'passed': False, 'error': 'not run'}
+                try:
+                    self._emit(job, {'type': 'tool_start', 'tool': 'qemu', 'phase': 'behavior',
+                                     'message': 'QEMU: compare original and protected sample drivers with no disk or network.'})
+                    behavior = run_behavior(self.root, job['sample_id'], job['_directory'] / 'ollvm-behavior')
+                    self._emit(job, {'type': 'tool_end', 'tool': 'qemu', 'phase': 'behavior',
+                                     'message': f"QEMU behaviour {'matched' if behavior.get('passed') else 'did not match'}."})
+                except Exception as exc:
+                    behavior = {'available': False, 'passed': False, 'error': str(exc)}
+                    self._emit(job, {'type': 'tool_end', 'tool': 'qemu', 'phase': 'behavior',
+                                     'message': 'QEMU behaviour test failed: ' + str(exc)[:800]})
+                job['_behavior_passed'] = bool(behavior.get('passed'))
+                job['result'] = {
+                    'operation': 'ollvm_compare', 'before': before, 'after': None,
+                    'protection': {'state': 'ollvm_obfuscation_applied', 'tool': 'xollvm',
+                                   'method': 'LLVM IR control-flow and string obfuscation',
+                                   'passes': built['passes'], 'seed': built['seed'],
+                                   'strength': 'source_obfuscation', 'obfuscation': True,
+                                   'behavior_verified': False,
+                                   'driver_vectors_matched': bool(behavior.get('passed')),
+                                   'behavior_scope': 'separate_deterministic_drivers',
+                                   'original_sha256': before['sha256'], 'transformed_sha256': built['sha256'],
+                                   'sources': built['sources'], 'versions': built['versions'],
+                                   'commands': built['commands']},
+                    'comparison': None,
+                    'artifacts': {'original': 'original-0.elf', 'transformed': protected.name},
+                    'behavior': behavior,
+                    'limitations': ['OLLVM protection applies only to the bundled self-authored sample source.',
+                                    'Obfuscation raises analysis cost; it is not a proof of security or a guarantee against a determined analyst.',
+                                    'QEMU tests separate deterministic driver builds, not the downloadable protected ELF; its behavior was not verified.',
+                                    'Only the listed driver vectors are compared in a QEMU guest with no disk or network; matching does not prove full behavioral equivalence.']}
+                if job['_cancel'].is_set():
+                    raise InterruptedError('Cancelled after OLLVM protection; reanalysis was not started.')
+                after = self._analyze(job, protected, tools, 'after', targets[0]['relative_path'] + ' [OLLVM]')
+                reports.append({'analysis': after})
+                job['result']['after'] = after
+                job['result']['comparison'] = compare_reports(before, after)
             elif job['profile'] == 'constant_blinding':
                 if job['_cancel'].is_set():
                     raise InterruptedError('Cancelled before demo protection.')
@@ -336,12 +401,23 @@ class Workbench:
             else:
                 job['status'] = 'partial' if any(t.get('status') not in {'ok', 'skipped'}
                     for r in reports for t in r['analysis'].get('tools', [])) else 'completed'
+                if job.get('_behavior_passed') is False and job['status'] == 'completed':
+                    job['status'] = 'partial'
         except InterruptedError as exc:
             job['status'], job['error'] = 'cancelled', str(exc)
         except Exception as exc:
             job['status'], job['error'] = 'failed', str(exc)
         finally:
-            self._emit(job, {'type': job['status'], 'message': job['error'] or f"Finished: {job['status']}. No program was executed."})
+            if job['error']:
+                final_message = job['error']
+            elif job['profile'] == 'ollvm_source' and job.get('result', {}).get('behavior'):
+                behavior = job['result']['behavior']
+                final_message = (f"Finished: {job['status']}. QEMU behaviour check "
+                                 f"{'passed' if behavior.get('passed') else 'did not pass'}; "
+                                 "the target was not executed on the host.")
+            else:
+                final_message = f"Finished: {job['status']}. No program was executed."
+            self._emit(job, {'type': job['status'], 'message': final_message})
             record = {k: v for k, v in job.items() if not k.startswith('_')}
             report = job['_directory'] / 'report.json'
             report.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -373,7 +449,7 @@ class Workbench:
 
     def artifact_path(self, job_id):
         record = self.get_job(job_id)
-        if record['operation'] not in {'strip_compare', 'protect_compare', 'binary_compare'} or not record.get('result') or record['status'] not in {'completed', 'partial'}:
+        if record['operation'] not in {'strip_compare', 'protect_compare', 'binary_compare', 'ollvm_compare'} or not record.get('result') or record['status'] not in {'completed', 'partial'}:
             raise ValueError('No completed protection artifact is available.')
         if record['operation'] == 'strip_compare':
             return self.safe_run_file(self.jobs[job_id]['_directory'] / 'symbols-removed.elf')
@@ -384,6 +460,11 @@ class Workbench:
                 if candidate.is_file():
                     return self.safe_run_file(candidate)
             raise ValueError('Binary hygiene artifact is not available.')
+        if record['operation'] == 'ollvm_compare':
+            candidate = self.jobs[job_id]['_directory'] / 'ollvm' / 'protected.elf'
+            if candidate.is_file():
+                return self.safe_run_file(candidate)
+            raise ValueError('OLLVM-protected artifact is not available.')
         protected = sorted((self.jobs[job_id]['_directory'] / 'protected').glob('*-protected.*'))
         if not protected:
             raise ValueError('Protected artifact is not available.')
@@ -512,11 +593,11 @@ def compare_reports(before: dict, after: dict) -> dict:
 
     pairs = [
         ('File size (bytes)', before.get('size_bytes'), after.get('size_bytes')),
-        ('Parsed symbol entries', before.get('metadata', {}).get('symbol_entries'), after.get('metadata', {}).get('symbol_entries')),
+        ('Names reported by selected tools (includes Ghidra labels)', before.get('metadata', {}).get('symbol_entries'), after.get('metadata', {}).get('symbol_entries')),
         ('Parsed sections', before.get('metadata', {}).get('sections_count'), after.get('metadata', {}).get('sections_count')),
-        ('Exported functions', count(before, 'functions'), count(after, 'functions')),
-        ('Extracted strings', count(before, 'strings'), count(after, 'strings')),
-        ('Exported call edges', count(before, 'call_edges'), count(after, 'call_edges')),
+        ('Functions identified by selected tools', count(before, 'functions'), count(after, 'functions')),
+        ('Strings reported by selected tools', count(before, 'strings'), count(after, 'strings')),
+        ('Call relationships mapped by selected tools', count(before, 'call_edges'), count(after, 'call_edges')),
         ('Executable sections', content(before, 'sections', 'executable'), content(after, 'sections', 'executable')),
         ('Writable sections', content(before, 'sections', 'writable'), content(after, 'sections', 'writable')),
         ('File entropy (bits/byte)', content(before, 'file_entropy'), content(after, 'file_entropy')),
@@ -550,7 +631,7 @@ def compare_reports(before: dict, after: dict) -> dict:
         metrics.append({'name': name, 'before': a, 'after': b, 'delta': delta})
         if a is None or b is None:
             # Missing data is N/A, never zero; only report it if one side had it.
-            if (a, b) != (None, None) or name in {'Exported functions', 'Extracted strings', 'Exported call edges'}:
+            if (a, b) != (None, None) or name in {'Functions identified by selected tools', 'Strings reported by selected tools', 'Call relationships mapped by selected tools'}:
                 summary['not_collected'].append(name)
         elif a != b:
             summary['changed'].append(f'{name}: {a} → {b}')

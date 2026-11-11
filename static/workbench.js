@@ -92,17 +92,20 @@
   function selectedTools(tools, mode, manual) {
     return Object.entries(tools || {}).filter(([id, info]) => info.available && (mode === 'all' || manual.has(id))).map(([id]) => id);
   }
-  function jobPayload({selection, targetIds, tools, authorized, operation, stripAvailable, binaryAvailable, profile, options}) {
+  function jobPayload({selection, targetIds, tools, authorized, operation, stripAvailable, binaryAvailable, ollvmAvailable, profile, options}) {
     if (!authorized) throw new Error('Confirm authorization before starting static analysis.');
     if (!selection?.selection_id) throw new Error('Discover a source and select targets first.');
     const allowed = new Set((selection.targets || []).filter(target => target.analyzable).map(target => target.target_id));
     if (!targetIds.length || targetIds.some(id => !allowed.has(id))) throw new Error('Select at least one analyzable target.');
     if (!tools.length) throw new Error('Select at least one available analysis tool.');
-    if (!['analyze', 'strip_compare', 'protect_compare', 'binary_compare'].includes(operation)) throw new Error('Unsupported operation.');
-    if (operation === 'strip_compare' || operation === 'protect_compare') {
+    if (!['analyze', 'strip_compare', 'protect_compare', 'binary_compare', 'ollvm_compare'].includes(operation)) throw new Error('Unsupported operation.');
+    if (operation === 'strip_compare' || operation === 'protect_compare' || operation === 'ollvm_compare') {
       if (selection.sourceKind !== 'sample') throw new Error('Source protection is limited to bundled sample copies.');
+      if (['protect_compare', 'ollvm_compare'].includes(operation) && selection.source_transform_supported === false)
+        throw new Error('This hardened fixture is analysis-only; choose the original Level 5 sample for source transforms.');
       if (targetIds.length !== 1) throw new Error('Select exactly one sample target for comparison.');
     }
+    if (operation === 'ollvm_compare' && !ollvmAvailable) throw new Error('The project-local xollvm toolchain is unavailable.');
     if (operation === 'binary_compare') {
       if (targetIds.length !== 1) throw new Error('Select exactly one ELF or PE target for binary hygiene.');
       if (!binaryAvailable) throw new Error('Binary hygiene tools are unavailable.');
@@ -180,7 +183,8 @@
     tool_error: 'Failed', unavailable: 'Not installed', queued: 'Queued', running: 'Running', completed: 'Done',
     partial: 'Done, with gaps', failed: 'Failed'};
   const OPERATION_TEXT = {analyze: 'Analysis', strip_compare: 'Remove symbol names + compare',
-    protect_compare: 'Hide constants (demo) + compare', binary_compare: 'Remove debug info + compare'};
+    protect_compare: 'Hide constants (demo) + compare', binary_compare: 'Remove debug info + compare',
+    ollvm_compare: 'OLLVM obfuscation + QEMU behaviour check'};
   const toolName = id => TOOL_NAMES[id] || String(id || 'tool');
   const statusText = status => STATUS_TEXT[status] || String(status || 'Unknown');
   function fmt(value) {
@@ -256,6 +260,15 @@
     if (metrics.format === 'ELF' && !(metrics.errors || []).length) return sym.elf_symbols ?? 0;
     return sym.elf_symbols;
   }
+  const HARDENING_STATES = {present: 'Present', absent: 'Absent', partial: 'Partial', unknown: 'Unknown', not_applicable: 'Not applicable'};
+  function hardeningRows(hardening = {}) {
+    return Object.values(hardening.checks || {}).map(item => [
+      item.label || 'Protection',
+      HARDENING_STATES[item.state] || String(item.state || 'Unknown'),
+      item.evidence || 'No evidence collected.'
+    ]);
+  }
+
   // Grouped, explained metrics. Each row: [label, value, what it means].
   function metricGroups(metrics = {}) {
     const s = metrics.sections || {}, im = metrics.imports || {}, ex = metrics.exports || {};
@@ -517,6 +530,13 @@
             body.append(element('h3', '', group.title));
             table(body, ['Item', 'Value', 'What it means'], group.rows, 500, 'metric-table');
           }
+          const hardening = analysis.hardening;
+          if (hardening && Object.keys(hardening.checks || {}).length) {
+            body.append(element('h3', '', 'Exploit-mitigation properties'));
+            table(body, ['Protection', 'Result', 'Evidence'], hardeningRows(hardening), 500, 'metric-table');
+            body.append(element('p', 'field-help', 'Present and absent are observed binary properties. They are not a security score; absence does not prove exploitability and presence is not a guarantee.'));
+            for (const warning of hardening.errors || []) body.append(element('p', 'field-help', display(warning)));
+          }
           body.append(element('p', 'field-help', 'N/A means the value was not collected (for example the tool was not installed). It never means zero.'));
         } else empty(body, 'Content metrics were not collected for this report.');
         const coverage = analysis.coverage || {};
@@ -643,7 +663,8 @@
       return jobPayload({selection: state.selection, targetIds: [...state.targetIds], tools,
         authorized: byId('authorization').checked, operation, profile, options,
         stripAvailable: !!state.status?.protection?.available,
-        binaryAvailable: !!state.status?.protection?.binary_hygiene});
+        binaryAvailable: !!state.status?.protection?.binary_hygiene,
+        ollvmAvailable: !!state.status?.protection?.ollvm?.available});
     }
     function updateGhidraPanel() {
       const usesGhidra = currentTools().includes('ghidra_headless');
@@ -666,7 +687,7 @@
       byId('runDemoBtn').disabled = !ready || !demoSample() || (state.job && !isTerminal(state.job.status));
       updateGhidraPanel();
       const profile = byId('protectionProfile').value;
-      const transformOperation = profile === 'symbol_removal' ? 'strip_compare' : profile === 'binary_hygiene' ? 'binary_compare' : 'protect_compare';
+      const transformOperation = profile === 'symbol_removal' ? 'strip_compare' : profile === 'binary_hygiene' ? 'binary_compare' : profile === 'ollvm_source' ? 'ollvm_compare' : 'protect_compare';
       byId('stripCompareBtn').disabled = !canRun(transformOperation);
       byId('cancelJobBtn').disabled = !state.status || !state.job || isTerminal(state.job.status);
       const targets = (state.selection?.targets || []).filter(target => target.analyzable);
@@ -684,10 +705,15 @@
       else if (!currentTools().length) hint = 'Select at least one available analysis tool.';
       else if (!byId('ghidraOptions').hidden && !byId('largeTargetWarning').hidden && !byId('allowLargeGhidra').checked) hint = 'A large file is selected with Ghidra. Press "Skip Ghidra" or tick "Run Ghidra anyway".';
       else if (!byId('authorization').checked) hint = 'Confirm the authorization checkbox to enable analysis.';
+      else if (['constant_blinding', 'ollvm_source'].includes(profile) && state.selection.source_transform_supported === false) hint = 'Analyze is ready. The hardened Level 5 fixture is analysis-only; choose the original Level 5 for source transforms.';
       else if (profile === 'binary_hygiene' && state.targetIds.size !== 1) hint = 'Analyze is ready. Binary hygiene needs exactly one selected ELF or PE target.';
-      else if (['symbol_removal', 'constant_blinding'].includes(profile) && state.selection.sourceKind !== 'sample') hint = 'Analyze is ready. Source transforms are limited to bundled sample copies; binary hygiene can run on any one selected ELF or PE copy.';
+      else if (['symbol_removal', 'constant_blinding', 'ollvm_source'].includes(profile) && state.selection.sourceKind !== 'sample') hint = 'Analyze is ready. Source transforms are limited to bundled sample copies; binary hygiene can run on any one selected ELF or PE copy.';
       else if (profile === 'symbol_removal' && !state.status?.protection?.available) hint = 'Analyze is ready. GNU strip is unavailable; demo constant blinding remains available for bundled samples.';
       else if (profile === 'binary_hygiene' && !state.status?.protection?.binary_hygiene) hint = 'Analyze is ready. Binary hygiene requires GNU strip and objcopy; one is unavailable.';
+      else if (profile === 'ollvm_source' && !state.status?.protection?.ollvm?.available) hint = state.status?.platform === 'windows'
+        ? 'Analyze is ready. OLLVM source transforms and QEMU verification are unavailable on native Windows; use a supported Linux host.'
+        : 'Analyze is ready. The project-local xollvm toolchain is unavailable.';
+      else if (profile === 'ollvm_source' && state.selection.sourceKind === 'sample' && state.targetIds.size !== 1) hint = 'OLLVM protection needs exactly one selected sample target.';
       text('runHint', hint);
     }
     function renderTools() {
@@ -721,7 +747,7 @@
         state.status = status;
         if (first) state.manualTools = new Set(selectedTools(status.tools, 'all', new Set()));
         text('connectionText', 'Connected · static analysis only'); byId('connectionText').className = 'badge good';
-        text('versionText', `Version ${status.version || 'local'} · programs are never executed`);
+        text('versionText', `Version ${status.version || 'local'} · host targets never executed`);
         const cpu = byId('ghidraCpu'); const timeout = byId('ghidraTimeout');
         cpu.max = String(status.ghidra?.max_cpu_limit || 1);
         if (first) {
@@ -846,17 +872,22 @@
       byId('comparisonContent').hidden = false; byId('comparisonEmpty').hidden = true;
       const labels = {symbol_removal_applied: 'Symbol removal applied — names were removed from a copy',
         demo_obfuscation_applied: 'Demo obfuscation applied — constants were hidden in a rebuilt copy',
-        binary_metadata_hygiene_applied: 'Binary metadata hygiene applied — debug info and build notes were removed from a copy'};
+        binary_metadata_hygiene_applied: 'Binary metadata hygiene applied — debug info and build notes were removed from a copy',
+        ollvm_obfuscation_applied: 'OLLVM obfuscation applied — control flow and strings were transformed in a rebuilt copy'};
       text('transformationState', labels[protection.state] || `Change applied: ${protection.state || 'Not collected'}`);
       warningList(byId('comparisonWarnings'), [
         protection.state === 'binary_metadata_hygiene_applied'
           ? 'This removes metadata from a copy. It is not code obfuscation and not a protection guarantee. Nothing was executed, so behaviour is not verified.'
-          : 'This is a demonstration on a copy of a bundled sample. It is not real protection or a security score. Nothing was executed, so behaviour is not verified.',
+          : protection.state === 'ollvm_obfuscation_applied'
+            ? (protection.driver_vectors_matched
+              ? 'OLLVM rebuilt a sample copy. QEMU matched deterministic vectors from separate driver builds, not the downloadable protected ELF; its behavior is not verified. Generated code and Ghidra labels may increase counts; they are not a security score.'
+              : 'OLLVM rebuilt a sample copy, but the separate QEMU driver check did not pass. The downloadable protected ELF was not executed or behaviorally verified.')
+            : 'This is a demonstration on a copy of a bundled sample. It is not real protection or a security score. Nothing was executed, so behaviour is not verified.',
         ...(state.job.status === 'partial' ? ['Some tools did not finish, so a few numbers are missing (N/A). Check Tool output in both panels.'] : []),
         ...(state.job.status === 'failed' ? [`Analyzing the changed copy failed: ${display(state.job.error)}. The original report and the change details are kept below.`] : [])
       ].map(display));
       const details = byId('transformationDetails'); details.replaceChildren();
-      const strength = {metadata_only: 'Metadata only (code unchanged)', demonstration_only: 'Demonstration only'}[protection.strength] || protection.strength;
+      const strength = {metadata_only: 'Metadata only (code unchanged)', demonstration_only: 'Demonstration only', source_obfuscation: 'Source obfuscation (control flow + strings)'}[protection.strength] || protection.strength;
       const detailsBox = collapsible(details, 'How the copy was made');
       keyValues(detailsBox, [
         ['Tool used', protection.tool], ['Method', protection.method],
@@ -864,10 +895,31 @@
         ['Strength', strength],
         ['Original fingerprint (SHA-256)', protection.original_sha256], ['Changed copy fingerprint (SHA-256)', protection.transformed_sha256],
         ['Original file', result.artifacts?.original], ['Changed copy', result.artifacts?.transformed],
-        ['Behaviour tested', 'No — programs are never run']
+        ['Separate driver vectors', protection.state === 'ollvm_obfuscation_applied'
+          ? (protection.driver_vectors_matched ? 'Matched in QEMU — separate driver builds only' : 'Not matched or unavailable')
+          : 'Not tested'],
+        ['Downloadable artifact behavior', 'Not verified — the downloadable copy was not executed']
       ].filter(([, value]) => value !== undefined && value !== null && value !== ''));
+      if (protection.state === 'ollvm_obfuscation_applied' && result.behavior) {
+        const behavior = result.behavior;
+        const behaviorBox = collapsible(details, `QEMU behaviour check (${behavior.passed ? 'passed' : 'not passed'})`);
+        keyValues(behaviorBox, [
+          ['Result', behavior.passed ? 'Matched — original and protected separate-driver transcripts' : 'Not passed'],
+          ['Scope', 'Separate deterministic driver builds, not the downloadable protected ELF'],
+          ['Exit codes', behavior.exit_codes ? `original ${behavior.exit_codes.original}, protected ${behavior.exit_codes.protected}` : 'Not collected'],
+          ['Isolation', 'QEMU micro-VM; no disk, no network'],
+          ['Guest time', behavior.duration_seconds != null ? `${behavior.duration_seconds}s` : 'N/A'],
+          ['Limitation', (behavior.limitations || []).join(' ') || 'Deterministic drivers only']
+        ].filter(([, value]) => value !== undefined && value !== null && value !== ''));
+        if (behavior.original_output || behavior.protected_output) {
+          behaviorBox.append(element('h4', '', 'Original driver output'));
+          behaviorBox.append(element('pre', '', behavior.original_output || 'Not collected'));
+          behaviorBox.append(element('h4', '', 'Protected driver output'));
+          behaviorBox.append(element('pre', '', behavior.protected_output || 'Not collected'));
+        }
+      }
       const afterTitles = {symbol_removal_applied: 'After · symbols-removed copy', demo_obfuscation_applied: 'After · demo-transformed copy',
-        binary_metadata_hygiene_applied: 'After · metadata-hygiene copy'};
+        binary_metadata_hygiene_applied: 'After · metadata-hygiene copy', ollvm_obfuscation_applied: 'After · OLLVM-protected copy'};
       text('compareAfterTitle', afterTitles[protection.state] || 'After · transformed copy');
       text('compareBeforeTitle', protection.state === 'binary_metadata_hygiene_applied' ? 'Before · original copy' : 'Before · original sample');
       const summary = byId('comparisonSummary'); summary.replaceChildren();
@@ -882,6 +934,7 @@
       summary.append(changeBox, sameBox, naBox);
       const metrics = byId('comparisonMetrics'); metrics.replaceChildren(); metrics.append(element('h3', '', 'All measurements, before and after (not a security score)'));
       table(metrics, ['What was measured', 'Before', 'After', 'Change'], (comparison.metrics || []).map(item => [item.name, na(item.before), na(item.after), item.delta === 0 ? 'no change' : signed(item.delta)]));
+      metrics.append(element('p', 'field-help', 'Counts from combined tools can increase after obfuscation because generated code, extra strings, and Ghidra analysis labels appear. This does not by itself mean weaker protection or a security regression. Compare file symbol tables, plaintext messages, recovered logic, and the limited QEMU check separately.'));
       metrics.append(element('p', 'field-help', 'N/A means the value was not measured on that side (for example the tool was not selected). It is never counted as zero.'));
       const functionsBox = byId('comparisonFunctions'); functionsBox.replaceChildren();
       functionsBox.append(element('h3', '', 'Which functions can still be matched'));
@@ -913,8 +966,8 @@
         renderAnalysis(byId('compareAfter'), result.after || {}, {prefix: 'after', mode: byId('compareMode').value})];
       downloadLink('comparisonReportLink', reportUrl(state.job.job_id), true);
       const artifactLink = byId('downloadArtifactBtn');
-      artifactLink.textContent = protection.state === 'demo_obfuscation_applied' ? 'Download demo-transformed copy' : protection.state === 'binary_metadata_hygiene_applied' ? 'Download cleaned copy' : 'Download copy without names';
-      downloadLink('downloadArtifactBtn', artifactUrl(state.job.job_id), ['symbol_removal_applied', 'demo_obfuscation_applied', 'binary_metadata_hygiene_applied'].includes(protection.state));
+      artifactLink.textContent = protection.state === 'demo_obfuscation_applied' ? 'Download demo-transformed copy' : protection.state === 'binary_metadata_hygiene_applied' ? 'Download cleaned copy' : protection.state === 'ollvm_obfuscation_applied' ? 'Download OLLVM-protected copy' : 'Download copy without names';
+      downloadLink('downloadArtifactBtn', artifactUrl(state.job.job_id), ['symbol_removal_applied', 'demo_obfuscation_applied', 'binary_metadata_hygiene_applied', 'ollvm_obfuscation_applied'].includes(protection.state));
     }
     function renderResult(result) {
       state.result = result;
@@ -923,7 +976,7 @@
         [`This analysis ended as “${statusText(state.job.status)}”, so some evidence may be missing. A missing result is not a sign the program is safe.`];
       warningList(byId('evidenceWarnings'), warnings);
       downloadLink('downloadReportBtn', reportUrl(state.job.job_id), true);
-      if (['strip_compare', 'protect_compare', 'binary_compare'].includes(result.operation)) {
+      if (['strip_compare', 'protect_compare', 'binary_compare', 'ollvm_compare'].includes(result.operation)) {
         renderComparison();
         byId('evidenceContent').replaceChildren(); empty(byId('evidenceContent'), 'The before/after comparison is ready on the Compare page.');
         const button = element('button', 'btn primary', 'Open the comparison'); button.type = 'button'; button.addEventListener('click', () => showPage('compare')); byId('evidenceContent').append(button);
@@ -1094,7 +1147,7 @@
     byId('analyzeBtn').addEventListener('click', () => run('analyze'));
     byId('stripCompareBtn').addEventListener('click', () => {
       const profile = byId('protectionProfile').value;
-      run(profile === 'symbol_removal' ? 'strip_compare' : profile === 'binary_hygiene' ? 'binary_compare' : 'protect_compare');
+      run(profile === 'symbol_removal' ? 'strip_compare' : profile === 'binary_hygiene' ? 'binary_compare' : profile === 'ollvm_source' ? 'ollvm_compare' : 'protect_compare');
     });
     byId('protectionProfile').addEventListener('change', controls);
     byId('resultTargetSelect').addEventListener('change', renderResultTarget);
@@ -1111,7 +1164,7 @@
     return {ready, state, showPage, stop: watcher.stop};
   }
   const api = {createClient, defaultTargets, selectedTools, jobPayload, isTerminal, reportUrl, artifactUrl, createJobWatcher, graphData, analysisWarnings, renderAnalysis, boot,
-    isAbsolutePath, friendlyError, largeTargets, metricRows, metricGroups, exposureFindings, na, shortCommand, shortPaths, humanSize, fmt};
+    isAbsolutePath, friendlyError, largeTargets, metricRows, metricGroups, hardeningRows, exposureFindings, na, shortCommand, shortPaths, humanSize, fmt};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.ReverseShield = api;
 

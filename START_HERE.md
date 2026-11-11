@@ -35,21 +35,22 @@ loopback only.
 - If `setup.bat` cannot download, open `START_HERE.md` on another machine, copy
   the links from `scripts/setup_windows.ps1`, download the three archives, and
   ask the project owner for the offline release ZIP.
-- If Python is installed as `py`, `run.bat` uses `py -3`; otherwise it uses
-  `python`.
+- `setup.bat` and `run.bat` probe compatible Python 3.15→3.11
+  explicitly; they do not assume `py -3` resolves to a compatible interpreter.
+  A clean Windows account must still verify this release candidate manually.
 
 ### What works on Windows
 
-| Feature | Windows status |
+| Feature | Native Windows status for this candidate |
 |---|---|
-| ELF analysis | Works (Ghidra; PE/ELF copied as data) |
-| PE analysis | Works (header metadata + Ghidra; `objdump` when MinGW is present) |
-| Flatpak discovery | Linux only |
-| RPM ingestion | Linux only |
-| Sample analysis | Works |
-| Source demo protection | Works only when MinGW `gcc` is present |
-| Binary metadata hygiene | Works when `strip`/`objcopy` are present |
-| Dynamic analysis | Disabled |
+| ELF analysis | Implemented (Ghidra); clean-machine manual verification pending |
+| PE analysis | Implemented (header metadata + Ghidra, `objdump` with MinGW); manual verification pending |
+| Flatpak discovery / RPM ingestion | Linux only |
+| Six bundled sample choices | Implemented; manual Windows UI check pending |
+| Source demo protection on the five original samples | Requires MinGW `gcc`; manual verification pending |
+| Binary metadata hygiene | Requires `strip`/`objcopy`; manual verification pending |
+| OLLVM source transforms / QEMU behavior drivers | **Unavailable on native Windows; Linux-only optional workflow** |
+| Dynamic target analysis | Disabled |
 
 ## Fedora / Linux (project owner)
 
@@ -123,7 +124,8 @@ fetch-site checks protect against foreign websites. This is local browser
 request protection, not user accounts, enterprise IAM or protection from a
 malicious process running as the same OS user.
 
-Analysis reads target bytes locally and never runs the target. The application
+Analysis reads target bytes locally and never runs the target on the host. The optional
+OLLVM check runs only deterministic sample drivers inside QEMU. The application
 has no telemetry or cloud analysis upload. Setup downloads third-party tools;
 developer security scanners may download rules. Inputs, reports and temporary
 analysis workspaces live in `runs/` until manually removed. Stop the server

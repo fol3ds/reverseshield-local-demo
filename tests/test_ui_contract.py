@@ -126,7 +126,24 @@ assert.equal(UI.jobPayload({...options,operation:'strip_compare'}).operation, 's
 assert.equal(UI.jobPayload({...options,selection:{...choice,sourceKind:'path'},operation:'binary_compare',binaryAvailable:true,profile:'binary_hygiene'}).operation, 'binary_compare');
 assert.throws(() => UI.jobPayload({...options,operation:'binary_compare',targetIds:['main','lib'],binaryAvailable:true}), /one|single/i);
 assert.throws(() => UI.jobPayload({...options,operation:'binary_compare',binaryAvailable:false}), /unavailable/i);
+assert.deepEqual(UI.hardeningRows({checks:{nx:{label:'NX / DEP',state:'present',evidence:'non-exec stack'}}}), [['NX / DEP','Present','non-exec stack']]);
+const hardened = {...choice, sample_id:'level-5-hardened', source_transform_supported:false};
+assert.equal(UI.jobPayload({...options,selection:hardened,operation:'analyze'}).operation, 'analyze');
+assert.throws(() => UI.jobPayload({...options,selection:hardened,operation:'protect_compare'}), /analysis-only/i);
+assert.throws(() => UI.jobPayload({...options,selection:hardened,operation:'ollvm_compare',ollvmAvailable:true}), /analysis-only/i);
 """)
+
+    def test_qemu_display_distinguishes_separate_drivers_from_download(self):
+        script = (STATIC / 'workbench.js').read_text(encoding='utf-8')
+        self.assertIn("['Separate driver vectors'", script)
+        self.assertIn("['Downloadable artifact behavior', 'Not verified", script)
+        self.assertNotIn('protection.behavior_verified ?', script)
+
+    def test_windows_ollvm_limitation_is_visible_in_workbench(self):
+        html = (STATIC / 'index.html').read_text(encoding='utf-8')
+        js = (STATIC / 'workbench.js').read_text(encoding='utf-8')
+        self.assertIn('OLLVM source transforms and QEMU verification require Linux', html)
+        self.assertIn("state.status?.platform === 'windows'", js)
 
     def test_job_lifecycle_polls_real_sequences_and_stops_on_partial(self):
         self.node(r"""

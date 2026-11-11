@@ -29,9 +29,21 @@ For PowerShell, set the Ghidra opt-in with
 
 ## Package contents and exclusions
 
-The ZIP includes source, tests, project documentation, and the event draft. It
-omits `tools/`, `runs/`, `backups/`, `.git/`, Python caches, generated report
-DOCX/PDF files, and the full `docs/handoff/DAY1.md` handoff. The handoff and its
-ZIP metrics are maintained on the project branch. `scripts/package_lite_windows.py`
-creates a detached `ReverseShield_Lite_Windows_Day1.zip.sha256` checksum file
-beside the archive.
+`python3 scripts/package_lite_windows.py` creates a **local, unreviewed release
+candidate** in `dist/ReverseShield_Lite_Windows_v0.5.0-team.zip`, together with
+`dist/SHA256SUMS.txt`. It uses only reviewed Git-index files; untracked working
+files are not included until explicitly staged. The ZIP includes source, tests,
+setup scripts, the six bundled ELF fixtures (the sixth is analysis-only), and
+selected project documentation/sanitized summaries. It excludes `tools/`,
+`runs/`, `backups/`, `.git/`, Python caches, raw `docs/security/` outputs,
+old `docs/assets/` screenshots, internal `docs/handoff/` and `docs/event/`
+notes, generated PDFs/DOCX and draft MP4s. **Inspect the exact staged index
+and ZIP before sharing.** Neither the ZIP nor its checksum was published by
+this preparation work.
+
+On native Windows the optional OLLVM/QEMU workflow is unavailable. After
+extracting the candidate into a clean directory, a Windows teammate must run
+`setup.bat`, `run.bat`, static sample and PE analysis and a report download.
+Record the OS, interpreter, tool versions, screenshots/logs without private
+paths, and any failures in the Day 4 acceptance matrix. CI on the older merged
+branch is not a replacement for this manual test.
