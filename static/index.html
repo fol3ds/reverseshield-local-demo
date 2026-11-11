@@ -96,7 +96,7 @@
         </section>
 
         <section id="evidencePanel" class="panel" aria-labelledby="resultsTitle" tabindex="-1">
-          <div class="panel-head"><h2 id="resultsTitle"><span class="step">3</span>Report</h2><a id="downloadReportBtn" class="btn compact" hidden download>Download full report (JSON)</a></div>
+          <div class="panel-head"><h2 id="resultsTitle"><span class="step">3</span>Report</h2><a id="downloadReportBtn" class="btn compact" hidden download>Download sanitized report</a></div>
           <div id="evidenceWarnings" class="notice warning" hidden></div>
           <label class="field result-target" for="resultTargetSelect"><span>Show report for</span><select id="resultTargetSelect" disabled><option value="">No results yet</option></select></label>
           <div id="evidenceContent"><p class="empty">The report appears here when an analysis finishes. Partial results can still be downloaded.</p></div>
@@ -130,7 +130,7 @@
   <section id="compare" class="page" hidden aria-labelledby="compareTitle">
     <div class="page-head">
       <div><p class="eyebrow">Original file vs. changed copy</p><h1 id="compareTitle">Compare before and after</h1></div>
-      <div class="actions"><a id="comparisonReportLink" class="btn" hidden download>Download full report (JSON)</a><a id="downloadArtifactBtn" class="btn" hidden download>Download changed copy</a></div>
+      <div class="actions"><a id="comparisonReportLink" class="btn" hidden download>Download sanitized report</a><a id="downloadArtifactBtn" class="btn" hidden download>Download changed copy</a></div>
     </div>
     <div id="comparisonEmpty" class="panel empty">No comparison yet. On the Operate page, choose a change under “Optional: test a release-hygiene change” and press <strong>Make copy &amp; compare</strong>.</div>
     <div id="comparisonContent" hidden>

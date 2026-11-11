@@ -65,6 +65,8 @@ def parse_pe_header(path: str | Path) -> dict[str, Any]:
         machine, section_count, timestamp, symbol_ptr, symbol_count, optional_size, characteristics = struct.unpack(
             "<HHIIIHH", coff
         )
+        if not 1 <= section_count <= 96:
+            raise ValueError("Invalid PE section count.")
         optional = stream.read(optional_size)
         if len(optional) < optional_size:
             raise ValueError("Truncated PE optional header.")
@@ -75,6 +77,8 @@ def parse_pe_header(path: str | Path) -> dict[str, Any]:
             width, entry_offset, base_offset = "PE32+", 16, 24
         else:
             raise ValueError("Unknown PE optional-header magic.")
+        if len(optional) < (96 if magic == 0x10B else 112):
+            raise ValueError("Truncated PE optional header.")
         entry = struct.unpack_from("<I", optional, entry_offset)[0] if len(optional) >= entry_offset + 4 else 0
         image_base = struct.unpack_from("<I" if width == "PE32" else "<Q", optional, base_offset)[0] if len(optional) >= base_offset + (4 if width == "PE32" else 8) else 0
 
@@ -86,12 +90,14 @@ def parse_pe_header(path: str | Path) -> dict[str, Any]:
             stream.seek(section_offset + index * 40)
             raw = stream.read(40)
             if len(raw) < 40:
-                break
+                raise ValueError("Truncated PE section table.")
             name = raw[:8].split(b"\x00", 1)[0].decode("ascii", "replace") or f"section{index + 1}"
             if name.startswith("/") and name[1:].isdigit() and symbol_ptr:
                 # MinGW keeps long names such as .debug_info in the COFF string table.
                 name = _coff_long_name(stream, symbol_ptr + symbol_count * 18 + int(name[1:])) or name
             virtual_size, virtual_address, raw_size, raw_pointer = struct.unpack_from("<IIII", raw, 8)
+            if raw_size and raw_pointer + raw_size > target.stat().st_size:
+                raise ValueError("PE section data exceeds the file.")
             section_characteristics = struct.unpack_from("<I", raw, 36)[0]
             if section_characteristics & 0x20000000:
                 section_kind = "CODE"
@@ -202,34 +208,11 @@ def _invoke(label: str, arguments: list[str]) -> dict[str, Any]:
     executable = shutil.which(arguments[0])
     if executable is None:
         return {"label": label, "command": display, "status": "unavailable", "return_code": None, "output": f"{arguments[0]} is not installed."}
-    try:
-        result = subprocess.run(
-            [executable, *arguments[1:]],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=TOOL_TIMEOUT,
-            env={**os.environ, "LC_ALL": "C"},
-        )
-    except subprocess.TimeoutExpired:
-        return {"label": label, "command": display, "status": "timeout", "return_code": None, "output": f"Timed out after {TOOL_TIMEOUT} seconds."}
-    except OSError as exc:
-        return {"label": label, "command": display, "status": "tool_error", "return_code": None, "output": f"Could not start tool: {exc}"}
-    output = result.stdout or ""
-    if result.stderr:
-        output += ("\n" if output else "") + result.stderr
-    output = output.strip()
-    truncated = len(output) > OUTPUT_LIMIT
-    if truncated:
-        output = output[:OUTPUT_LIMIT] + "\n… output truncated by the local demo …"
-    return {
-        "label": label,
-        "command": display,
-        "status": "ok" if result.returncode == 0 else "tool_error",
-        "return_code": result.returncode,
-        "output": output,
-        "truncated": truncated,
-    }
+    from engine import _run
+    result = _run(label, [executable, *arguments[1:]], label=label,
+                  timeout=TOOL_TIMEOUT, output_limit=OUTPUT_LIMIT)
+    result['command'] = display
+    return result
 
 
 def analyze_elf(path: str | Path, filename: str | None = None, detail: str = "summary") -> dict[str, Any]:

@@ -54,6 +54,12 @@ def _command(args: list[str], runner: CommandRunner) -> CommandResult:
         raise RuntimeError(f"Required local tool is unavailable: {args[0]}") from exc
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError(f"{args[0]} timed out while reading local package metadata.") from exc
+    except OSError as exc:
+        # e.g. PermissionError when a non-executable "flatpak" is on PATH:
+        # report the tool as unavailable instead of failing the request.
+        raise RuntimeError(f"Required local tool cannot be started: {args[0]} ({exc.strerror or exc})") from exc
+    except subprocess.SubprocessError as exc:
+        raise RuntimeError(f"{args[0]} could not be run: {exc}") from exc
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
         raise RuntimeError(detail[:500] or f"{args[0]} returned exit code {result.returncode}.")

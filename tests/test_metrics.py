@@ -49,6 +49,22 @@ def synthetic_pe(imports=("CreateFileW", "ReadFile"), exports=3, named=2):
 
 
 def process_alive(pid):
+    if os.name == 'nt':
+        import ctypes
+        from ctypes import wintypes
+        kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+        kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel.OpenProcess.restype = wintypes.HANDLE
+        kernel.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+        handle = kernel.OpenProcess(0x1000, False, pid)
+        if not handle:
+            return False
+        try:
+            code = wintypes.DWORD()
+            return bool(kernel.GetExitCodeProcess(handle, ctypes.byref(code))) and code.value == 259
+        finally:
+            kernel.CloseHandle(handle)
     try:
         state = Path(f"/proc/{pid}/stat").read_text().split(")", 1)[1].split()[0]
         return state not in {"Z", "X"}
@@ -211,7 +227,6 @@ class EngineMetricTests(unittest.TestCase):
                     normalize(bad)
 
 
-@unittest.skipIf(os.name == "nt", "the fake analyzeHeadless probe is a POSIX shell script")
 class GhidraProcessTests(unittest.TestCase):
     """Cancel/timeout probes with a fake analyzeHeadless; no real target runs."""
 
@@ -221,8 +236,16 @@ class GhidraProcessTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         root = Path(self.temp.name)
         self.pidfile = root / "child.pid"
-        self.script = root / "analyzeHeadless"
-        self.script.write_text("#!/bin/sh\nsleep 60 &\necho $! > \"$RS_TEST_PIDFILE\"\necho ready\nwait\n")
+        self.script = root / ("analyzeHeadless.bat" if os.name == 'nt' else "analyzeHeadless")
+        if os.name == 'nt':
+            probe = root / 'probe.py'
+            probe.write_text("import os, subprocess, sys, time\nfrom pathlib import Path\n"
+                             "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+                             "Path(os.environ['RS_TEST_PIDFILE']).write_text(str(child.pid))\n"
+                             "print('ready', flush=True)\nchild.wait()\n", encoding='utf-8')
+            self.script.write_text(f'@"{sys.executable}" "{probe}"\n', encoding='utf-8')
+        else:
+            self.script.write_text("#!/bin/sh\nsleep 60 &\necho $! > \"$RS_TEST_PIDFILE\"\necho ready\nwait\n")
         self.script.chmod(0o700)
         self.target = root / "inert.bin"
         self.target.write_bytes(b"\x7fELF" + b"\0" * 60)

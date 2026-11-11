@@ -27,3 +27,12 @@ docs/ReverseShield_3-Day_Execution_Plan.docx
 docs/ReverseShield_3-Day_Execution_Plan.pdf
 docs/ReverseShield_Project_Report_and_Plan.docx
 docs/ReverseShield_Project_Report_and_Plan.pdf
+
+# Local secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json

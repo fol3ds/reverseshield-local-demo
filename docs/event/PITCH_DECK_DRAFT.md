@@ -15,7 +15,7 @@ machine before recording; tool versions can shift counts slightly.
 - **ReverseShield — Reverse-Engineering Exposure Workbench**
 - One line: *See what a reverse engineer can recover from your build, before
   you ship it.*
-- Team: Owner (lead, Fedora) · Naser · Zayed · Nomai · Faisal *(confirm the
+- Team: Faisal (owner, Fedora) · Naser · Zayed · Nomai *(confirm the
   final 4 registered names; the event allows at most 4)*
 - IS CyberNext 2026 · Cybersecurity track
 
@@ -110,24 +110,53 @@ What it shows:
 
 ---
 
-## Slides 7–10 — for Nomai (Day 3)
+## Slide 7 — Safety and shareable evidence
 
-7. **Safety and responsible use:** no execution, loopback, authorization
-   checkbox, sample-only source transforms. Cite
-   `docs/security/DAY2_SECURITY_REVIEW.md` (4 issues fixed on Day 2; open
-   items with mitigations).
-8. **Validation:** test counts (Windows + Fedora), SAST/DAST results, Ghidra
-   opt-in test.
-9. **Impact and roadmap** (from `docs/ROADMAP.md`; say "next", not "done"):
-   - **Hardening checks:** is PIE/NX/RELRO/stack canary (Linux) or
-     ASLR/DEP/CFG (Windows) turned on? Each missing flag shows the CWE it
-     helps prevent and the compiler flag that fixes it.
-   - **Known-vulnerable components:** find embedded library versions
-     (OpenSSL, zlib, curl…) and match them offline to CVEs as "possible
-     match — verify".
-   - CI integration, Mach-O/APK/DEB, sanitized evidence packs, sandboxed
-     adapters (RS-06).
-10. **Team, ask, contact.**
+- Target binaries are read, never executed; operations work on copies.
+- Token-authenticated API reads/writes plus same-origin loopback checks.
+- Bounded input, tool output and Ghidra execution; visible missing coverage.
+- Sanitized export omits raw text/code and retains hashes and measurements.
+- Local-only is not a sandbox: hostile parsers and same-user malware remain risks.
+
+Speaker: “Our safety claim is specific: we never launch the selected program.
+We keep original evidence locally and share a reduced, sanitized summary.”
+
+## Slide 8 — Validation with traceable evidence
+
+Use exact current counts from `docs/handoff/DAY3.md`, with pass and skip counts
+separate. Show `docs/security/README.md` and `docs/performance.md` rather than
+reusing earlier test counts. Windows results are measured here; Fedora remains
+Faisal's required verification. The API negative tests exercise missing tokens,
+foreign origins, traversal, malformed uploads, cancellation and export integrity.
+SAST checks our implementation; it does not prove every analyzed binary safe.
+
+## Slide 9 — Users, impact and next steps
+
+For analysts: inspect authorized ELF/PE files and compare measurable exposure.
+For developers: identify debug metadata and path leakage before sharing builds.
+For both: export reproducible evidence without raw workstation data.
+
+Next, not implemented: platform hardening checks (PIE/NX/RELRO, ASLR/DEP/CFG),
+offline component/CVE hints requiring analyst verification, CI integration and
+process isolation. Validate usefulness with analyst/developer pilot sessions;
+do not claim commercial adoption or measured customer benefit yet.
+
+## Slide 10 — Team and ask
+
+Faisal: owner, Fedora validation and release. Naser: Windows/PE baseline.
+Zayed: metrics and demo usability. Nomai: API security, privacy and validation.
+Four members total. Principal presenter to be confirmed by the team.
+
+Ask: feedback from application-security teams and developer pilot users.
+Repository: https://github.com/fol3ds/reverseshield-local-demo
+Confirm judge access before submitting a private repository link.
+
+### What we do not claim
+
+No automatic vulnerability/exploitability verdict; no malware sandbox;
+no production obfuscation or reverse-engineering resistance score; no enterprise
+IAM, universal DLP, incident response or cyber recovery. “Demo constant blinding”
+is educational; binary hygiene removes metadata, not program logic.
 
 ---
 
@@ -148,9 +177,17 @@ other windows and notifications. Use a folder path with no user name visible.
 | 1:35–1:45 | **Change to apply to the copy** → *Remove symbol names* · tick the permission box · click **Make copy & compare** | "Now a common release step: strip symbols, on a copy only." |
 | 1:45–2:15 | **Compare** tab: *What changed* box, then the metrics table | "Names 35 to 0, file and folder names 14 to 1, no home-folder paths left, debug info gone, file a third smaller." |
 | 2:15–2:35 | Scroll to *Function matching* and *Limitations* | "But Ghidra still decompiles 8 functions. Stripping hides names, not logic. We say that plainly; there is no fake security score." |
-| 2:35–2:50 | Click **Download full report (JSON)** | "Every run keeps a hash-checked report: evidence, tool versions and limitations." |
+| 2:35–2:50 | Click **Download sanitized report** | "The shareable summary keeps hashes, metrics and coverage while omitting raw output, commands and recovered code. The original evidence stays local." |
 | 2:50–3:00 | Closing slide | "Windows and Linux, local-first, built by our team. Next: CI integration and sandboxed adapters." |
 
 Fallback: if Ghidra is slow on the demo PC, set **Which tools to run → Let
 me choose** and untick Ghidra, or press **Skip Ghidra**. The metrics, strings
 and symbols parts of the story still work.
+
+
+Day 3 recording note: the numerical comparison above is historical Day 2
+evidence, not a new benchmark. Precompute the comparison for a reliable
+three-minute recording and identify it as a completed run. Never imply that a
+long Ghidra job completed instantly; show a labelled cut or lightweight fallback.
+Avoid showing raw logs, local paths or recovered strings in the public recording.
+Use the sanitized export and measurement table for the public evidence segment.

@@ -18,7 +18,7 @@
   function createClient(fetcher = root.fetch.bind(root)) {
     let token = '';
     async function request(path, options = {}) {
-      const response = await fetcher(path, {credentials: 'same-origin', cache: 'no-store', ...options});
+      const response = await fetcher(path, {credentials: 'same-origin', cache: 'no-store', ...options, headers: {...options.headers, 'X-ReverseShield-Token': token}});
       let data;
       try { data = await response.json(); }
       catch (_) { throw new Error(`Local API returned non-JSON data (HTTP ${response.status}).`); }
@@ -35,13 +35,17 @@
       body: binary ? body : JSON.stringify(body)});
     }
     return {
-      async loadStatus() {
-        token = '';
+      async loadStatus(bootstrapToken = root.document?.querySelector('meta[name="reverseshield-token"]')?.content) {
+        token = bootstrapToken || '';
+        if (!token) throw new Error('Reload the workbench to obtain a session token.');
         const status = await request('/api/status');
-        if (status.dynamic_analysis?.enabled !== false) throw new Error('Static-only safety check failed: dynamic analysis must be disabled.');
-        if (!status.token) throw new Error('Local API status did not provide an operation token.');
-        token = status.token;
+        if (status.dynamic_analysis?.enabled !== false) { token = ''; throw new Error('Static-only safety check failed: dynamic analysis must be disabled.'); }
         return status;
+      },
+      async download(path) {
+        const response = await fetcher(path, {credentials: 'same-origin', cache: 'no-store', headers: {'X-ReverseShield-Token': token}});
+        if (!response.ok) throw new Error('Download failed. Reload the page if the server restarted.');
+        return response.blob();
       },
       apps: () => request('/api/apps'),
       samples: () => request('/api/samples'),
@@ -112,7 +116,7 @@
       ...(profile ? {profile} : {}), ...ghidra, authorized: true};
   }
   const isTerminal = status => ['completed', 'partial', 'failed', 'cancelled'].includes(status);
-  const reportUrl = id => `/api/jobs/${encodeURIComponent(id)}/report`;
+  const reportUrl = id => `/api/jobs/${encodeURIComponent(id)}/report-sanitized`;
   const artifactUrl = id => `/api/jobs/${encodeURIComponent(id)}/artifact`;
   function createJobWatcher(client, {onUpdate, onError, schedule = setTimeout, clear = clearTimeout}) {
     let generation = 0;
@@ -809,7 +813,21 @@
       } catch (error) { text('discoveryState', 'Could not read that source. See the message at the top of the page.'); message(friendlyError(error)); }
       finally { state.busy = false; controls(); }
     }
-    function downloadLink(id, url, show) { const link = byId(id); link.hidden = !show; if (show) link.href = url; else link.removeAttribute('href'); }
+    function downloadLink(id, url, show) {
+      const link = byId(id); link.hidden = !show; link.removeAttribute('href');
+      if (!show) { link.onclick = null; return; }
+      link.href = '#';
+      link.onclick = async event => {
+        event.preventDefault();
+        try {
+          const blob = await client.download(url);
+          const objectUrl = URL.createObjectURL(blob);
+          const save = document.createElement('a'); save.href = objectUrl;
+          save.download = id === 'downloadArtifactBtn' ? 'reverseshield-changed-copy.bin' : 'reverseshield-sanitized.json';
+          save.click(); setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        } catch (error) { byId('globalMessage').textContent = friendlyError(error); }
+      };
+    }
     function clearResults() {
       state.result = null; state.renderedResult = null; state.compareViews = [];
       byId('evidenceContent').replaceChildren(); empty(byId('evidenceContent'), 'Waiting for this job to return evidence.');
@@ -1089,7 +1107,7 @@
       catch (error) { message(`Cancellation request failed: ${friendlyError(error)}`); controls(); }
     });
     root.addEventListener('beforeunload', () => watcher.stop());
-    const ready = Promise.all([refreshStatus(), loadSamples(), loadApps(), loadJobs()]);
+    const ready = refreshStatus().then(() => Promise.all([loadSamples(), loadApps(), loadJobs()]));
     return {ready, state, showPage, stop: watcher.stop};
   }
   const api = {createClient, defaultTargets, selectedTools, jobPayload, isTerminal, reportUrl, artifactUrl, createJobWatcher, graphData, analysisWarnings, renderAnalysis, boot,

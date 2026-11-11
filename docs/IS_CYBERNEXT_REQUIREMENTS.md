@@ -1,3 +1,6 @@
+> Current review: see `event/DAY3_EVENT_REVIEW.md` (11 November 2026).
+> This older planning document contains historical assumptions, not confirmed current requirements.
+
 # IS CyberNext 2026 — Requirements and ReverseShield Gap Analysis
 
 Source: <https://iscybernext.com/en> and <https://iscybernext.com/en/register>

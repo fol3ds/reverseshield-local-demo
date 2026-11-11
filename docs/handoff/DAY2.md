@@ -75,7 +75,8 @@
 - `app.py`: missing Flatpak returns an empty list with a reason (no more
   HTTP 503 console error on Windows).
 - `platform_support.py`: `system_executable()`, safe `command_for()`.
-- `discovery.py`: Windows walker skips junctions/reparse points.
+- `discovery.py`: Windows walker skips junctions/reparse points; a `flatpak`
+  that exists but cannot be started is reported as unavailable (was HTTP 400).
 - `static/index.html`, `workbench.js`, `workbench.css`: demo panel, Ghidra
   options, metrics/coverage view, comparison summary/functions/limitations,
   friendly errors.

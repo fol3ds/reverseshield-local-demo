@@ -7,6 +7,7 @@ Extend Windows coverage in the PE-capable upgraded API test module.
 import http.client
 import json
 import os
+import secrets
 import threading
 import unittest
 from http.server import ThreadingHTTPServer
@@ -28,6 +29,7 @@ class LocalWorkbenchApiTests(unittest.TestCase):
         if app is None:
             return
         cls.server = ThreadingHTTPServer(("127.0.0.1", 0), app.ReverseShieldHandler)
+        cls.server.api_token = secrets.token_urlsafe(32)
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
         cls.port = cls.server.server_address[1]
@@ -42,7 +44,7 @@ class LocalWorkbenchApiTests(unittest.TestCase):
     def request(self, method, path, body=None, headers=None):
         self.assertIsNotNone(app, "local HTTP workbench API is not implemented yet")
         connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=10)
-        connection.request(method, path, body=body, headers=headers or {})
+        connection.request(method, path, body=body, headers={"X-ReverseShield-Token": self.server.api_token, **(headers or {})})
         response = connection.getresponse()
         data = response.read()
         status = response.status

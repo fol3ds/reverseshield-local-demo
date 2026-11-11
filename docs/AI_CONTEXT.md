@@ -226,3 +226,40 @@ Never add a test that executes a bundled sample or a selected target.
 - `docs/IS_CYBERNEXT_REQUIREMENTS.md` — event requirements and gap analysis.
 - `docs/GITHUB_WORKFLOW.md` — beginner Git/GitHub Desktop handoff.
 - `START_HERE.md` — Windows/Linux setup and run instructions.
+
+
+## Day 3 privacy and sharing
+
+All API reads and writes require the per-session token. Open the workbench
+page to bootstrap it; `/api/status` does not disclose it. The browser sends
+the token in a header, including downloads. Host, Origin, Referer and browser
+fetch-site checks protect against foreign websites. This is local browser
+request protection, not user accounts, enterprise IAM or protection from a
+malicious process running as the same OS user.
+
+Analysis reads target bytes locally and never runs the target. The application
+has no telemetry or cloud analysis upload. Setup downloads third-party tools;
+developer security scanners may download rules. Inputs, reports and temporary
+analysis workspaces live in `runs/` until manually removed. Stop the server
+before deleting unwanted runs; the job index resets on restart. There is no
+encrypted evidence store or cumulative disk quota: monitor available space.
+
+Use **Download sanitized report** for sharing. It creates a separate JSON
+summary, retaining hashes, numerical measurements, coverage and tool status.
+Raw output, recovered code, artifacts, event text, commands and environment
+values are omitted; identifiable paths and known secret patterns are redacted.
+The original local report is unchanged. This is not a universal secret detector;
+review the exported summary before publishing. The authenticated `/report`
+endpoint remains an internal raw-evidence route. `/report-sanitized` is the
+shareable route. Changed binaries are not sanitized reports and may retain
+embedded strings; do not publish them as proof of privacy.
+
+Offline export (refuses to overwrite the source or an existing destination):
+
+```sh
+python sanitize_report.py runs/JOB_ID/report.json sanitized-report.json
+```
+
+Day 3 verification and unresolved release gates are recorded in
+`docs/handoff/DAY3.md`. Older PDF/DOCX reports and Day 2 screenshots describe
+earlier builds; use the Day 3 evidence for current security claims.

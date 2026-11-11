@@ -1,0 +1,744 @@
+{
+  "version": "1.185.0",
+  "results": [
+    {
+      "check_id": "python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args",
+      "path": "scripts\\zap_local.py",
+      "start": {
+        "line": 83,
+        "col": 36,
+        "offset": 3794
+      },
+      "end": {
+        "line": 83,
+        "col": 43,
+        "offset": 3801
+      },
+      "extra": {
+        "message": "Detected subprocess function 'Popen' with user controlled data. A malicious actor could leverage this to perform command injection. You may consider using 'shlex.quote()'.",
+        "metadata": {
+          "owasp": [
+            "A01:2017 - Injection",
+            "A03:2021 - Injection",
+            "A05:2025 - Injection"
+          ],
+          "cwe": [
+            "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+          ],
+          "asvs": {
+            "control_id": "5.3.8 OS Command Injection",
+            "control_url": "https://github.com/OWASP/ASVS/blob/master/4.0/en/0x13-V5-Validation-Sanitization-Encoding.md#v53-output-encoding-and-injection-prevention-requirements",
+            "section": "V5: Validation, Sanitization and Encoding Verification Requirements",
+            "version": "4"
+          },
+          "references": [
+            "https://stackoverflow.com/questions/3172470/actual-meaning-of-shell-true-in-subprocess",
+            "https://docs.python.org/3/library/subprocess.html",
+            "https://docs.python.org/3/library/shlex.html",
+            "https://semgrep.dev/docs/cheat-sheets/python-command-injection/"
+          ],
+          "category": "security",
+          "technology": [
+            "python"
+          ],
+          "confidence": "MEDIUM",
+          "cwe2022-top25": true,
+          "cwe2021-top25": true,
+          "subcategory": [
+            "vuln"
+          ],
+          "likelihood": "MEDIUM",
+          "impact": "MEDIUM",
+          "license": "Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license",
+          "vulnerability_class": [
+            "Command Injection"
+          ],
+          "source": "https://semgrep.dev/r/python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args",
+          "shortlink": "https://sg.run/pLGg"
+        },
+        "severity": "ERROR",
+        "fingerprint": "requires login",
+        "lines": "requires login",
+        "validation_state": "NO_VALIDATOR",
+        "engine_kind": "OSS"
+      }
+    }
+  ],
+  "errors": [],
+  "paths": {
+    "scanned": [
+      ".github\\workflows\\cross-platform-tests.yml",
+      ".gitignore",
+      "__pycache__\\analysis.cpython-312.pyc",
+      "__pycache__\\app.cpython-312.pyc",
+      "__pycache__\\binary_protection.cpython-312.pyc",
+      "__pycache__\\build_samples.cpython-312.pyc",
+      "__pycache__\\demo_protection.cpython-312.pyc",
+      "__pycache__\\discovery.cpython-312.pyc",
+      "__pycache__\\engine.cpython-312.pyc",
+      "__pycache__\\http_upgrade.cpython-312.pyc",
+      "__pycache__\\metrics.cpython-312.pyc",
+      "__pycache__\\platform_support.cpython-312.pyc",
+      "__pycache__\\rpm_ingest.cpython-312.pyc",
+      "__pycache__\\samples.cpython-312.pyc",
+      "__pycache__\\sanitize_report.cpython-312.pyc",
+      "__pycache__\\workflow.cpython-312.pyc",
+      "analysis.py",
+      "app.py",
+      "binary_protection.py",
+      "build_samples.py",
+      "CHANGELOG.md",
+      "demo_protection.py",
+      "discovery.py",
+      "docs\\AI_CONTEXT.md",
+      "docs\\assets\\architecture.dot",
+      "docs\\assets\\pipeline.dot",
+      "docs\\build_plan.py",
+      "docs\\build_report.py",
+      "docs\\docx_helpers.py",
+      "docs\\event\\DAY3_EVENT_REVIEW.md",
+      "docs\\event\\DAY3_STORYBOARD.md",
+      "docs\\event\\PITCH_DECK_DRAFT.md",
+      "docs\\finalize_tocs.py",
+      "docs\\GITHUB_WORKFLOW.md",
+      "docs\\handoff\\AI_HANDOFF_DAY1.md",
+      "docs\\handoff\\DAY0.md",
+      "docs\\handoff\\DAY1.md",
+      "docs\\handoff\\DAY2.md",
+      "docs\\handoff\\EVENT_DRAFT_DAY1.md",
+      "docs\\handoff\\TEMPLATE.md",
+      "docs\\IS_CYBERNEXT_REQUIREMENTS.md",
+      "docs\\NASER_AGENT_PROMPT.md",
+      "docs\\ReverseShield_Project_Report_and_Plan.docx",
+      "docs\\ROADMAP.md",
+      "docs\\security\\DAY2_SECURITY_REVIEW.md",
+      "docs\\security\\README.md",
+      "docs\\security\\zap-day3.html",
+      "docs\\TEAM_TASKS_DAY1-4.md",
+      "engine.py",
+      "ghidra_scripts\\ReverseShieldExport.java",
+      "http_upgrade.py",
+      "LITE_PACKAGE.md",
+      "metrics.py",
+      "platform_support.py",
+      "README.md",
+      "rpm_ingest.py",
+      "run.bat",
+      "run.sh",
+      "samples\\src\\level-1\\main.c",
+      "samples\\src\\level-2\\main.c",
+      "samples\\src\\level-3\\main.c",
+      "samples\\src\\level-4\\main.c",
+      "samples\\src\\level-5\\main.c",
+      "samples\\src\\level-5\\policy.h",
+      "samples\\src\\level-5\\rules.c",
+      "samples.py",
+      "sanitize_report.py",
+      "scripts\\package_lite_windows.py",
+      "scripts\\setup_windows.ps1",
+      "scripts\\zap_local.py",
+      "setup.bat",
+      "START_HERE.md",
+      "static\\index.html",
+      "static\\workbench.css",
+      "static\\workbench.js",
+      "THIRD_PARTY_NOTICES.md",
+      "VERSION",
+      "workflow.py"
+    ]
+  },
+  "time": {
+    "rules": [],
+    "rules_parse_time": 0.2652716636657715,
+    "profiling_times": {
+      "config_time": 2.384481906890869,
+      "core_time": 19.449044704437256,
+      "ignores_time": 0.0009970664978027344,
+      "total_time": 21.851689338684082
+    },
+    "parsing_time": {
+      "total_time": 1.5081932544708252,
+      "per_file_time": {
+        "mean": 0.003968929617028488,
+        "std_dev": 0.001161425788987757
+      },
+      "very_slow_stats": {
+        "time_ratio": 0.418301750871547,
+        "count_ratio": 0.002631578947368421
+      },
+      "very_slow_files": [
+        {
+          "fpath": "static\\workbench.js",
+          "ftime": 0.6308798789978027
+        }
+      ]
+    },
+    "scanning_time": {
+      "total_time": 41.294410705566406,
+      "per_file_time": {
+        "mean": 0.22201296078261507,
+        "std_dev": 2.1857433032557463
+      },
+      "very_slow_stats": {
+        "time_ratio": 0.8522806744096719,
+        "count_ratio": 0.03225806451612903
+      },
+      "very_slow_files": [
+        {
+          "fpath": "scripts\\zap_local.py",
+          "ftime": 2.048685312271118
+        },
+        {
+          "fpath": "workflow.py",
+          "ftime": 2.3671369552612305
+        },
+        {
+          "fpath": "http_upgrade.py",
+          "ftime": 2.5565037727355957
+        },
+        {
+          "fpath": "docs\\build_plan.py",
+          "ftime": 4.240415811538696
+        },
+        {
+          "fpath": "docs\\build_report.py",
+          "ftime": 5.265767335891724
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "ftime": 18.715919017791748
+        }
+      ]
+    },
+    "matching_time": {
+      "total_time": 18.39298725128174,
+      "per_file_and_rule_time": {
+        "mean": 0.04840259802968878,
+        "std_dev": 0.06638694743483016
+      },
+      "very_slow_stats": {
+        "time_ratio": 0.7210362251830236,
+        "count_ratio": 0.060526315789473685
+      },
+      "very_slow_rules_on_files": [
+        {
+          "fpath": "engine.py",
+          "rule_id": "python.lang.security.audit.dangerous-system-call-tainted-env-args.dangerous-system-call-tainted-env-args",
+          "time": 0.23620390892028809
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "rule_id": "typescript.react.security.audit.react-unsanitized-method.react-unsanitized-method",
+          "time": 0.26577305793762207
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "rule_id": "javascript.express.security.audit.express-ssrf.express-ssrf",
+          "time": 0.3040328025817871
+        },
+        {
+          "fpath": "workflow.py",
+          "rule_id": "python.django.security.injection.command.subprocess-injection.subprocess-injection",
+          "time": 0.324984073638916
+        },
+        {
+          "fpath": "workflow.py",
+          "rule_id": "python.lang.security.audit.dangerous-system-call-tainted-env-args.dangerous-system-call-tainted-env-args",
+          "time": 0.42993998527526855
+        },
+        {
+          "fpath": "app.py",
+          "rule_id": "python.lang.security.audit.insecure-transport.requests.request-with-http.request-with-http",
+          "time": 0.6356282234191895
+        },
+        {
+          "fpath": "scripts\\zap_local.py",
+          "rule_id": "python.lang.security.audit.insecure-transport.requests.request-with-http.request-with-http",
+          "time": 1.132232904434204
+        },
+        {
+          "fpath": "http_upgrade.py",
+          "rule_id": "python.lang.security.audit.insecure-transport.requests.request-with-http.request-with-http",
+          "time": 1.420405387878418
+        },
+        {
+          "fpath": "docs\\build_plan.py",
+          "rule_id": "python.lang.security.audit.insecure-transport.requests.request-with-http.request-with-http",
+          "time": 2.998538017272949
+        },
+        {
+          "fpath": "docs\\build_report.py",
+          "rule_id": "python.lang.security.audit.insecure-transport.requests.request-with-http.request-with-http",
+          "time": 3.5170845985412598
+        }
+      ]
+    },
+    "tainting_time": {
+      "total_time": 19.402104377746582,
+      "per_def_and_rule_time": {
+        "mean": 0.009843787101850118,
+        "std_dev": 0.012600837028499479
+      },
+      "very_slow_stats": {
+        "time_ratio": 0.8313202051199776,
+        "count_ratio": 0.012683916793505834
+      },
+      "very_slow_rules_on_defs": [
+        {
+          "fpath": "static\\workbench.js",
+          "fline": 1,
+          "rule_id": "javascript.express.security.express-insecure-template-usage.express-insecure-template-usage",
+          "time": 1.1223464012145996
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "fline": 1,
+          "rule_id": "javascript.express.security.audit.xss.direct-response-write.direct-response-write",
+          "time": 1.125532865524292
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "fline": 1,
+          "rule_id": "javascript.express.security.cors-misconfiguration.cors-misconfiguration",
+          "time": 1.1289207935333252
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "fline": 1,
+          "rule_id": "javascript.express.security.audit.express-ssrf.express-ssrf",
+          "time": 1.149003267288208
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "fline": 1,
+          "rule_id": "javascript.express.security.require-request.require-request",
+          "time": 1.190101146697998
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "fline": 1,
+          "rule_id": "javascript.express.security.x-frame-options-misconfiguration.x-frame-options-misconfiguration",
+          "time": 1.20408034324646
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "fline": 1,
+          "rule_id": "javascript.express.security.audit.express-path-join-resolve-traversal.express-path-join-resolve-traversal",
+          "time": 1.228898525238037
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "fline": 1,
+          "rule_id": "javascript.express.security.injection.raw-html-format.raw-html-format",
+          "time": 1.2369117736816406
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "fline": 1,
+          "rule_id": "javascript.express.security.audit.res-render-injection.res-render-injection",
+          "time": 1.322028636932373
+        },
+        {
+          "fpath": "static\\workbench.js",
+          "fline": 1,
+          "rule_id": "typescript.react.security.audit.react-unsanitized-method.react-unsanitized-method",
+          "time": 3.437617301940918
+        }
+      ]
+    },
+    "fixpoint_timeouts": [
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at analysis.py:45:4 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "analysis.py",
+          "start": {
+            "line": 45,
+            "col": 5,
+            "offset": 1346
+          },
+          "end": {
+            "line": 45,
+            "col": 20,
+            "offset": 1361
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at binary_protection.py:55:4 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "binary_protection.py",
+          "start": {
+            "line": 55,
+            "col": 5,
+            "offset": 1762
+          },
+          "end": {
+            "line": 55,
+            "col": 25,
+            "offset": 1782
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at docs\\build_plan.py:45:4 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "docs\\build_plan.py",
+          "start": {
+            "line": 45,
+            "col": 5,
+            "offset": 1398
+          },
+          "end": {
+            "line": 45,
+            "col": 10,
+            "offset": 1403
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at docs\\build_report.py:56:4 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "docs\\build_report.py",
+          "start": {
+            "line": 56,
+            "col": 5,
+            "offset": 1658
+          },
+          "end": {
+            "line": 56,
+            "col": 10,
+            "offset": 1663
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at docs\\docx_helpers.py:141:4 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "docs\\docx_helpers.py",
+          "start": {
+            "line": 141,
+            "col": 5,
+            "offset": 4395
+          },
+          "end": {
+            "line": 141,
+            "col": 19,
+            "offset": 4409
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at docs\\docx_helpers.py:340:4 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "docs\\docx_helpers.py",
+          "start": {
+            "line": 340,
+            "col": 5,
+            "offset": 10955
+          },
+          "end": {
+            "line": 340,
+            "col": 14,
+            "offset": 10964
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at engine.py:144:4 [rules: 2, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "engine.py",
+          "start": {
+            "line": 144,
+            "col": 5,
+            "offset": 5753
+          },
+          "end": {
+            "line": 144,
+            "col": 14,
+            "offset": 5762
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at engine.py:256:4 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "engine.py",
+          "start": {
+            "line": 256,
+            "col": 5,
+            "offset": 11297
+          },
+          "end": {
+            "line": 256,
+            "col": 20,
+            "offset": 11312
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at engine.py:33:4 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "engine.py",
+          "start": {
+            "line": 33,
+            "col": 5,
+            "offset": 948
+          },
+          "end": {
+            "line": 33,
+            "col": 9,
+            "offset": 952
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at engine.py:409:4 [rules: 2, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "engine.py",
+          "start": {
+            "line": 409,
+            "col": 5,
+            "offset": 18655
+          },
+          "end": {
+            "line": 409,
+            "col": 12,
+            "offset": 18662
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at ghidra_scripts\\ReverseShieldExport.java:85:16 [rules: 1, first: java.lang.security.httpservlet-path-traversal.httpservlet-path-traversal]",
+        "location": {
+          "path": "ghidra_scripts\\ReverseShieldExport.java",
+          "start": {
+            "line": 85,
+            "col": 17,
+            "offset": 3677
+          },
+          "end": {
+            "line": 85,
+            "col": 20,
+            "offset": 3680
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at http_upgrade.py:118:8 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "http_upgrade.py",
+          "start": {
+            "line": 118,
+            "col": 9,
+            "offset": 5104
+          },
+          "end": {
+            "line": 118,
+            "col": 15,
+            "offset": 5110
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at metrics.py:166:4 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "metrics.py",
+          "start": {
+            "line": 166,
+            "col": 5,
+            "offset": 6508
+          },
+          "end": {
+            "line": 166,
+            "col": 17,
+            "offset": 6520
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at metrics.py:219:8 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "metrics.py",
+          "start": {
+            "line": 219,
+            "col": 9,
+            "offset": 9168
+          },
+          "end": {
+            "line": 219,
+            "col": 21,
+            "offset": 9180
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at metrics.py:280:4 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "metrics.py",
+          "start": {
+            "line": 280,
+            "col": 5,
+            "offset": 12204
+          },
+          "end": {
+            "line": 280,
+            "col": 16,
+            "offset": 12215
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at scripts\\zap_local.py:28:4 [rules: 2, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "scripts\\zap_local.py",
+          "start": {
+            "line": 28,
+            "col": 5,
+            "offset": 629
+          },
+          "end": {
+            "line": 28,
+            "col": 9,
+            "offset": 633
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at static\\workbench.js:1:0 [rules: 128, first: typescript.react.security.audit.react-unsanitized-method.react-unsanitized-method]",
+        "location": {
+          "path": "static\\workbench.js",
+          "start": {
+            "line": 1,
+            "col": 1,
+            "offset": 0
+          },
+          "end": {
+            "line": 1,
+            "col": 1,
+            "offset": 0
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at static\\workbench.js:584:11 [rules: 10, first: typescript.react.security.audit.react-unsanitized-method.react-unsanitized-method]",
+        "location": {
+          "path": "static\\workbench.js",
+          "start": {
+            "line": 584,
+            "col": 12,
+            "offset": 43998
+          },
+          "end": {
+            "line": 584,
+            "col": 16,
+            "offset": 44002
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at workflow.py:120:8 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "workflow.py",
+          "start": {
+            "line": 120,
+            "col": 9,
+            "offset": 4908
+          },
+          "end": {
+            "line": 120,
+            "col": 18,
+            "offset": 4917
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at workflow.py:217:8 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "workflow.py",
+          "start": {
+            "line": 217,
+            "col": 9,
+            "offset": 11475
+          },
+          "end": {
+            "line": 217,
+            "col": 13,
+            "offset": 11479
+          }
+        }
+      },
+      {
+        "error_type": "Fixpoint timeout",
+        "severity": "warn",
+        "message": "Fixpoint timeout while performing taint analysis at workflow.py:480:4 [rules: 1, first: python.boto3.security.hardcoded-token.hardcoded-token]",
+        "location": {
+          "path": "workflow.py",
+          "start": {
+            "line": 480,
+            "col": 5,
+            "offset": 28165
+          },
+          "end": {
+            "line": 480,
+            "col": 20,
+            "offset": 28180
+          }
+        }
+      }
+    ],
+    "prefiltering": {
+      "project_level_time": 0.0,
+      "file_level_time": 0.0,
+      "rules_with_project_prefilters_ratio": 0.0,
+      "rules_with_file_prefilters_ratio": 0.9908912556053812,
+      "rules_selected_ratio": 0.07861547085201794,
+      "rules_matched_ratio": 0.07861547085201794
+    },
+    "targets": [],
+    "total_bytes": 0,
+    "max_memory_bytes": 999976256
+  },
+  "engine_requested": "OSS",
+  "skipped_rules": [],
+  "profiling_results": []
+}

@@ -79,7 +79,11 @@ def _snapshot(source, destination, expected):
 class Workbench:
     def __init__(self, root, *, runs_root=None, analyzer=None, inventory_provider=None):
         self.root = Path(root).resolve()
-        self.runs_root = Path(runs_root or self.root / 'runs').resolve()
+        candidate = Path(runs_root or self.root / 'runs').absolute()
+        from discovery import _is_link_like
+        if any(_is_link_like(item) for item in (candidate, *candidate.parents) if item.exists() or item.is_symlink()):
+            raise ValueError('Linked run storage is not supported.')
+        self.runs_root = candidate.resolve()
         self.runs_root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.analyzer = analyzer
         self.inventory_provider = inventory_provider
@@ -356,27 +360,34 @@ class Workbench:
         with self.lock:
             return [{k: j[k] for k in ('job_id', 'status', 'operation', 'label')} for j in reversed(list(self.jobs.values()))]
 
+    def safe_run_file(self, path):
+        from discovery import _is_link_like
+        path = Path(path)
+        if not path.resolve().is_relative_to(self.runs_root) or any(_is_link_like(item) for item in (path, *path.parents) if item.exists() or item.is_symlink()):
+            raise ValueError('Unsafe run storage path.')
+        return path
+
     def report_path(self, job_id):
         self.get_job(job_id)
-        return self.jobs[job_id]['_directory'] / 'report.json'
+        return self.safe_run_file(self.jobs[job_id]['_directory'] / 'report.json')
 
     def artifact_path(self, job_id):
         record = self.get_job(job_id)
         if record['operation'] not in {'strip_compare', 'protect_compare', 'binary_compare'} or not record.get('result') or record['status'] not in {'completed', 'partial'}:
             raise ValueError('No completed protection artifact is available.')
         if record['operation'] == 'strip_compare':
-            return self.jobs[job_id]['_directory'] / 'symbols-removed.elf'
+            return self.safe_run_file(self.jobs[job_id]['_directory'] / 'symbols-removed.elf')
         if record['operation'] == 'binary_compare':
             directory = self.jobs[job_id]['_directory'] / 'binary-hygiene'
             for name in ('binary-hygiene.elf', 'binary-hygiene.exe'):
                 candidate = directory / name
                 if candidate.is_file():
-                    return candidate
+                    return self.safe_run_file(candidate)
             raise ValueError('Binary hygiene artifact is not available.')
         protected = sorted((self.jobs[job_id]['_directory'] / 'protected').glob('*-protected.*'))
         if not protected:
             raise ValueError('Protected artifact is not available.')
-        return protected[0]
+        return self.safe_run_file(protected[0])
 
     def wait(self, job_id, timeout=None):
         self.jobs[job_id]['_future'].result(timeout=timeout)

@@ -119,7 +119,7 @@ class UncPathTests(unittest.TestCase):
                 conn.close()
                 self.assertEqual(response.status, 400)
                 if os.name == "nt" or raw.startswith("//"):
-                    self.assertIn("UNC", body["error"])
+                    self.assertNotIn("attacker.invalid", body["error"])
 
 
 if __name__ == "__main__":

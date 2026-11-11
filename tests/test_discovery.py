@@ -94,6 +94,14 @@ class FlatpakDiscoveryTests(unittest.TestCase):
             discovery.discover_flatpak_targets("com.example.Missing", runner=runner)
 
 
+class ToolLaunchErrorTests(unittest.TestCase):
+    def test_unlaunchable_tool_is_reported_as_unavailable(self):
+        def runner(*_args, **_kwargs):
+            raise PermissionError(13, "Permission denied", "flatpak")
+        with self.assertRaisesRegex(RuntimeError, "cannot be started: flatpak"):
+            discovery._command(["flatpak", "list"], runner)
+
+
 class PathDiscoveryTests(unittest.TestCase):
     @unittest.skipIf(os.name == "nt", "POSIX descriptor-relative symlink race is not a Windows path")
     def test_file_replaced_by_symlink_at_open_is_never_read(self):

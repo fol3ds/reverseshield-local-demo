@@ -1,5 +1,15 @@
 # Changelog
 
+## Day 3 (Nomai) — 11 November 2026
+
+- Authenticate API reads and legacy writes; bootstrap token in the local page.
+- Add conservative sanitized report exports, CLI and authenticated browser downloads.
+- Harden CSP, error responses, linked storage and malformed PE inputs.
+- Bound legacy analyzer output; add cross-platform process-tree regression probes.
+- Record SAST/DAST results, performance, English storyboard and current event gaps.
+- Keep Fedora/large Linux benchmark and authenticated PR as explicit hand-off gates.
+
+
 ## Day 2 (Zayed) — analysis accuracy, one-click demo, comparison, security review
 
 - Added `metrics.py`: bounded content metrics from file bytes for ELF and PE

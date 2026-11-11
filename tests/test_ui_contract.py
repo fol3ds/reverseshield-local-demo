@@ -66,7 +66,7 @@ class WorkbenchUiContractTests(unittest.TestCase):
     let body = ''; for await (const chunk of req) body += chunk;
     requests.push({url:req.url, method:req.method, headers:req.headers, body});
     res.setHeader('Content-Type', 'application/json');
-    if (req.url === '/api/status') res.end(JSON.stringify({token:'test-token', dynamic_analysis:{enabled:false}, tools:{}}));
+    if (req.url === '/api/status') res.end(JSON.stringify({dynamic_analysis:{enabled:false}, tools:{}}));
     else if (req.url === '/api/apps') res.end('{"apps":[]}');
     else if (req.url === '/api/samples') res.end('{"samples":[]}');
     else res.end('{"selection_id":"s-1","targets":[]}');
@@ -75,12 +75,16 @@ class WorkbenchUiContractTests(unittest.TestCase):
   const client = UI.createClient((url, options) => fetch(`http://127.0.0.1:${server.address().port}${url}`, options));
   try {
     await assert.rejects(client.discover({kind:'sample',sample_id:'level-1'}), /status|token/i);
-    await client.loadStatus(); await client.apps(); await client.samples();
+    await client.loadStatus('test-token'); await client.apps(); await client.samples();
     await client.discover({kind:'flatpak',app_id:'com.example.App'});
     await client.discover({kind:'path',path:'/home/you/app'});
     await client.discover({kind:'sample',sample_id:'level-1'});
     await client.ingest({name:'a & b.rpm',data:new Uint8Array([65,66])});
     const writes = requests.filter(r => r.method === 'POST');
+    for (const req of requests) assert.equal(req.headers['x-reverseshield-token'], 'test-token');
+    const exported = await client.download('/api/jobs/example/report-sanitized');
+    assert.ok(exported.size > 0);
+    assert.equal(requests.at(-1).headers['x-reverseshield-token'], 'test-token');
     assert.equal(writes.length, 4);
     for (const req of writes) assert.equal(req.headers['x-reverseshield-token'], 'test-token');
     assert.deepEqual(JSON.parse(writes[0].body), {kind:'flatpak',app_id:'com.example.App'});
@@ -92,7 +96,7 @@ class WorkbenchUiContractTests(unittest.TestCase):
     await assert.rejects(client.discover({kind:'path',path:'relative/path'}), /absolute/i);
   } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
   const unsafe = UI.createClient(async () => ({ok:true,json:async()=>({token:'x',dynamic_analysis:{enabled:true}})}));
-  await assert.rejects(unsafe.loadStatus(), /dynamic|static/i);
+  await assert.rejects(unsafe.loadStatus('test-token'), /dynamic|static/i);
   await assert.rejects(unsafe.discover({kind:'sample',sample_id:'x'}), /status|token/i);
 })().catch(error => { console.error(error); process.exitCode = 1; });
 """)
@@ -141,7 +145,7 @@ assert.throws(() => UI.jobPayload({...options,operation:'binary_compare',binaryA
     else if (url.includes('?after=')) data = payloads.shift();
     return {ok:true,json:async()=>data};
   });
-  await client.loadStatus();
+  await client.loadStatus('test-token');
   const job = await client.startJob({selection_id:'s',target_ids:['t'],tools:['readelf'],operation:'analyze',authorized:true});
   assert.equal(job.job_id, 'job/a');
   assert.equal((await client.jobs()).jobs.length, 1);
@@ -163,9 +167,9 @@ assert.throws(() => UI.jobPayload({...options,operation:'binary_compare',binaryA
   assert.ok(requests.some(req => req.url === '/api/jobs/job%2Fa?after=1'));
   await client.cancelJob(job.job_id);
   const cancel = requests.find(req => req.url.endsWith('/cancel'));
-  assert.equal(cancel.options.headers['X-ReverseShield-Token'], 'token');
+  assert.equal(cancel.options.headers['X-ReverseShield-Token'], 'test-token');
   assert.equal(cancel.options.body, '{}');
-  assert.equal(UI.reportUrl(job.job_id), '/api/jobs/job%2Fa/report');
+  assert.equal(UI.reportUrl(job.job_id), '/api/jobs/job%2Fa/report-sanitized');
   assert.equal(UI.artifactUrl(job.job_id), '/api/jobs/job%2Fa/artifact');
   for (const status of ['completed','partial','failed','cancelled']) assert.equal(UI.isTerminal(status), true);
   assert.equal(UI.isTerminal('queued'), false);

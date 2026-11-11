@@ -1,3 +1,5 @@
+> Day 3 follow-up: see `README.md` in this directory for current fixes and evidence.
+
 # ReverseShield — Day 2 Security Code Review
 
 Reviewer: Zayed (Day 2, with AI assistance) · Date: 9 November 2026 (Riyadh)
@@ -64,7 +66,7 @@ sanitized export) should start from the open items below.
   sit under the project folder.
 - **Problem:** `cmd.exe` re-reads its command line. Python's quoting does not
   protect `&`, `|`, `<`, `>`, `^`, `%` or `!`. If the project is extracted to a
-  folder such as `C:\Users\Admin\Downloads\R&D\reverseshield`, the `&` splits
+  folder such as `C:\Users\<name>\Downloads\R&D\reverseshield`, the `&` splits
   the command: Ghidra breaks, and a crafted folder name runs a second command.
   This is the "BatBadBut" class (**CVE-2024-3566**; the Rust fix was
   CVE-2024-24576). Python documents the behaviour but has no CVE or fix, so the
