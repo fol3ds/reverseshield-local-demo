@@ -9,7 +9,7 @@ Use **GitHub Desktop** only; no command line is required for the team.
 1. Create a **private** GitHub repository named `reverseshield-local-demo`.
 2. Do **not** upload `tools/`, `runs/` or `backups/`; `.gitignore` already
    excludes them.
-3. Push `main` as the baseline. Confirm `VERSION` says `0.3.0-team`.
+3. Push `main` as the baseline. Confirm `VERSION` says `0.4.0-team`.
 4. Invite the three teammates: **Settings → Collaborators → Add people**.
 5. Protect `main`: **Settings → Branches → Add branch protection rule** →
    require a pull request before merging; do not allow force pushes.
@@ -148,8 +148,8 @@ ZIPs are a last resort because they lose history and make conflicts likely.
 
 ## 8. Release discipline
 
-- Version: `0.3.0-team` for the hand-off edition.
-- Tag after Day 4: `v0.3.0-team`.
+- Version: `0.4.0-team` for the Day 4 release.
+- Tag after Day 4: `v0.4.0-team`.
 - Release assets:
   - `ReverseShield_Lite_Windows.zip` — source, docs, samples, setup scripts, no
     `tools/`;

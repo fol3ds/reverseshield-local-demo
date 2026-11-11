@@ -90,7 +90,7 @@ For a strong cybersecurity-track submission, assume reviewers will look for:
 | Before/after comparison | Symbol removal, demo constant blinding, binary metadata hygiene |
 | Safety model | No target execution; loopback only; token-protected state changes; sample-only source transforms |
 | Documentation | Report, plan, architecture/pipeline diagrams, UI evidence, SAST baselines |
-| Testing | 58 automated tests, 1 opt-in Ghidra skip; Ghidra opt-in test passes |
+| Testing | 98 automated tests; Fedora: 98 with 1 skip when Ghidra is enabled; GitHub Actions Windows and Fedora jobs pass; platform-specific skips are visible |
 
 ### Gaps that must be closed before submission
 
