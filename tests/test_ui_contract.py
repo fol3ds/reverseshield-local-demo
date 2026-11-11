@@ -30,7 +30,7 @@ class Document(HTMLParser):
 
 class WorkbenchUiContractTests(unittest.TestCase):
     def test_operate_shell_exposes_discovery_safety_and_local_assets(self):
-        html = (STATIC / "index.html").read_text()
+        html = (STATIC / "index.html").read_text(encoding="utf-8")
         doc = Document(html)
         for name in ("operate", "compare", "monitor", "readme", "appSelect", "refreshAppsBtn",
                      "discoverAppBtn", "localPath", "discoverPathBtn", "fileInput", "ingestBtn",
@@ -48,13 +48,12 @@ class WorkbenchUiContractTests(unittest.TestCase):
         self.assertNotIn("fonts.googleapis", html)
         self.assertIn('src="/static/workbench.js"', html)
         self.assertIn('href="/static/workbench.css"', html)
-        css = (STATIC / "workbench.css").read_text()
-        for token in ("--bg:#04070d", "--bg2:#060a12", "--card:#080f1a", "--card2:#0b1524",
-                      "--inset:#0e1a2c", "--accent:#00e0ff", "--teal:#14b8a6", "--text:#d3e3f0",
-                      "--muted:#7b8fa3", "--dim:#46586a", "--good:#2dd4bf", "--warn:#f5b544",
-                      "--bad:#f87171", "--border:rgba(0,229,255,.14)",
-                      "--border-strong:rgba(0,229,255,.32)", "--accent-dim:rgba(0,229,255,.55)"):
+        css = (STATIC / "workbench.css").read_text(encoding="utf-8")
+        # Day 2 readable theme: calm light palette plus a matching dark palette.
+        for token in ("--bg:", "--surface:", "--text:", "--muted:", "--accent:", "--good:", "--warn:", "--bad:",
+                      "--font:", "--mono:", "prefers-color-scheme:dark", ':root[data-theme="dark"]'):
             self.assertIn(token, css)
+        self.assertNotIn("fonts.googleapis", css)
         self.assertIn(":focus-visible", css)
         self.assertIn("@media", css)
 
@@ -67,7 +66,7 @@ class WorkbenchUiContractTests(unittest.TestCase):
     let body = ''; for await (const chunk of req) body += chunk;
     requests.push({url:req.url, method:req.method, headers:req.headers, body});
     res.setHeader('Content-Type', 'application/json');
-    if (req.url === '/api/status') res.end(JSON.stringify({token:'test-token', dynamic_analysis:{enabled:false}, tools:{}}));
+    if (req.url === '/api/status') res.end(JSON.stringify({dynamic_analysis:{enabled:false}, tools:{}}));
     else if (req.url === '/api/apps') res.end('{"apps":[]}');
     else if (req.url === '/api/samples') res.end('{"samples":[]}');
     else res.end('{"selection_id":"s-1","targets":[]}');
@@ -76,12 +75,16 @@ class WorkbenchUiContractTests(unittest.TestCase):
   const client = UI.createClient((url, options) => fetch(`http://127.0.0.1:${server.address().port}${url}`, options));
   try {
     await assert.rejects(client.discover({kind:'sample',sample_id:'level-1'}), /status|token/i);
-    await client.loadStatus(); await client.apps(); await client.samples();
+    await client.loadStatus('test-token'); await client.apps(); await client.samples();
     await client.discover({kind:'flatpak',app_id:'com.example.App'});
     await client.discover({kind:'path',path:'/home/you/app'});
     await client.discover({kind:'sample',sample_id:'level-1'});
     await client.ingest({name:'a & b.rpm',data:new Uint8Array([65,66])});
     const writes = requests.filter(r => r.method === 'POST');
+    for (const req of requests) assert.equal(req.headers['x-reverseshield-token'], 'test-token');
+    const exported = await client.download('/api/jobs/example/report-sanitized');
+    assert.ok(exported.size > 0);
+    assert.equal(requests.at(-1).headers['x-reverseshield-token'], 'test-token');
     assert.equal(writes.length, 4);
     for (const req of writes) assert.equal(req.headers['x-reverseshield-token'], 'test-token');
     assert.deepEqual(JSON.parse(writes[0].body), {kind:'flatpak',app_id:'com.example.App'});
@@ -93,7 +96,7 @@ class WorkbenchUiContractTests(unittest.TestCase):
     await assert.rejects(client.discover({kind:'path',path:'relative/path'}), /absolute/i);
   } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
   const unsafe = UI.createClient(async () => ({ok:true,json:async()=>({token:'x',dynamic_analysis:{enabled:true}})}));
-  await assert.rejects(unsafe.loadStatus(), /dynamic|static/i);
+  await assert.rejects(unsafe.loadStatus('test-token'), /dynamic|static/i);
   await assert.rejects(unsafe.discover({kind:'sample',sample_id:'x'}), /status|token/i);
 })().catch(error => { console.error(error); process.exitCode = 1; });
 """)
@@ -142,7 +145,7 @@ assert.throws(() => UI.jobPayload({...options,operation:'binary_compare',binaryA
     else if (url.includes('?after=')) data = payloads.shift();
     return {ok:true,json:async()=>data};
   });
-  await client.loadStatus();
+  await client.loadStatus('test-token');
   const job = await client.startJob({selection_id:'s',target_ids:['t'],tools:['readelf'],operation:'analyze',authorized:true});
   assert.equal(job.job_id, 'job/a');
   assert.equal((await client.jobs()).jobs.length, 1);
@@ -164,9 +167,9 @@ assert.throws(() => UI.jobPayload({...options,operation:'binary_compare',binaryA
   assert.ok(requests.some(req => req.url === '/api/jobs/job%2Fa?after=1'));
   await client.cancelJob(job.job_id);
   const cancel = requests.find(req => req.url.endsWith('/cancel'));
-  assert.equal(cancel.options.headers['X-ReverseShield-Token'], 'token');
+  assert.equal(cancel.options.headers['X-ReverseShield-Token'], 'test-token');
   assert.equal(cancel.options.body, '{}');
-  assert.equal(UI.reportUrl(job.job_id), '/api/jobs/job%2Fa/report');
+  assert.equal(UI.reportUrl(job.job_id), '/api/jobs/job%2Fa/report-sanitized');
   assert.equal(UI.artifactUrl(job.job_id), '/api/jobs/job%2Fa/artifact');
   for (const status of ['completed','partial','failed','cancelled']) assert.equal(UI.isTerminal(status), true);
   assert.equal(UI.isTerminal('queued'), false);
@@ -176,7 +179,7 @@ assert.throws(() => UI.jobPayload({...options,operation:'binary_compare',binaryA
 """)
 
     def test_connected_views_expose_monitor_comparison_and_safe_evidence(self):
-        html = (STATIC / "index.html").read_text()
+        html = (STATIC / "index.html").read_text(encoding="utf-8")
         doc = Document(html)
         for name in ("jobStatus", "jobId", "cancelJobBtn", "resumeJobBtn", "jobEvents", "recentJobs",
                      "refreshJobsBtn", "downloadReportBtn", "downloadArtifactBtn", "resultTargetSelect",
@@ -187,7 +190,7 @@ assert.throws(() => UI.jobPayload({...options,operation:'binary_compare',binaryA
         for mode in ("basic", "pseudocode", "graphs", "all"):
             self.assertTrue(any(tag == "option" and attrs.get("value") == mode for tag, attrs in doc.elements))
         self.assertTrue(any(tag == "option" and attrs.get("value") == "binary_hygiene" for tag, attrs in doc.elements))
-        script = (STATIC / "workbench.js").read_text()
+        script = (STATIC / "workbench.js").read_text(encoding="utf-8")
         for unsafe in (".innerHTML", "insertAdjacentHTML", "eval(", "Math.random("):
             self.assertNotIn(unsafe, script)
         for phrase in ("Symbol removal applied", "Not collected", "textContent", "createElementNS", "boot()"):
@@ -227,7 +230,7 @@ assert.ok(warnings.some(message => message.includes('functions') && message.incl
         self.assertIsNotNone(shutil.which("node"), "node required for UI behavior contracts")
         result = subprocess.run(["node", "-e", "const assert = require('node:assert/strict');\n"
                                  "const UI = require('./static/workbench.js');\n" + script],
-                                cwd=ROOT, text=True, capture_output=True, timeout=15)
+                                cwd=ROOT, text=True, encoding="utf-8", errors="replace", capture_output=True, timeout=15)
         self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
 
 

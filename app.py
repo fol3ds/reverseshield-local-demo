@@ -82,10 +82,12 @@ class LegacyMetadataHandler(BaseHTTPRequestHandler):
         if path == "/api/apps":
             try:
                 apps = [{**item, "source": "flatpak"} for item in list_flatpak_apps()]
-            except RuntimeError as exc:
-                self._json({"error": str(exc), "apps": []}, 503)
+            except (RuntimeError, ValueError) as exc:
+                # No Flatpak (Windows, or Linux without flatpak) is a normal
+                # state, not a server failure: return an empty list + reason.
+                self._json({"apps": [], "available": False, "warnings": [str(exc)]})
                 return
-            self._json({"apps": apps})
+            self._json({"apps": apps, "available": True})
             return
         target_suffix = "/targets"
         app_prefix = "/api/apps/"

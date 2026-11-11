@@ -81,9 +81,15 @@ smoke remains opt-in because it requires a separate local tool installation.
    them manually: `file`, `readelf`, `objdump`, `strings`, `nm`, and Ghidra
    headless (decompiler, call edges, CFG). `readelf` is ELF-only; PE is parsed
    by the built-in PE/COFF reader and the available PE-aware tools.
-4. **Inspect evidence** — metadata, functions, symbols, strings, pseudocode,
-   graphs and raw bounded output. Unavailable or truncated data is labelled,
-   never treated as a security result.
+4. **Read the report** — it opens with plain-language findings (names, debug
+   info, file paths, recovered code), then metadata, functions, symbols, strings, pseudocode,
+   graphs and raw bounded output, plus **content metrics** computed from the
+   file bytes (sections, executable/writable counts, entropy, imports/exports,
+   string categories, debug/symbol flags) and a tool-coverage table. ELF/PE
+   symbol tables and Ghidra symbols are counted separately. Unavailable or
+   truncated data is labelled **N/A**, never treated as zero or a security result.
+   Ghidra runs with a per-run time and CPU limit; targets over 8 MiB need an
+   explicit confirmation or the lightweight-tools option.
 5. **Transformation comparison** — profiles act on a run-local copy; the
    original is untouched:
    - **GNU symbol removal** (`strip --strip-unneeded`, bundled samples only);
@@ -100,6 +106,12 @@ smoke remains opt-in because it requires a separate local tool installation.
 The project-local Ghidra 12.2 and Temurin JDK 25 live under `tools/` in the full
 development copy. They are **not committed**; `setup.bat` downloads them, or the
 owner provides an offline release asset.
+
+### One-click demo
+
+Press **Run demo · Level 5** on the Operate page. It selects the bundled Level 5
+sample, runs every available tool and opens the report. It never runs on page
+load. The 3-minute event script is in `docs/event/PITCH_DECK_DRAFT.md`.
 
 ## Scope and safety
 
@@ -152,9 +164,50 @@ RUN_GHIDRA_TESTS=1 python3 -m unittest tests.test_engine -v
 | `docs/TEAM_TASKS_DAY1-4.md` | Naser → Zayed → Nomai → Faisal task plan |
 | `docs/GITHUB_WORKFLOW.md` | Beginner GitHub Desktop hand-off |
 | `docs/IS_CYBERNEXT_REQUIREMENTS.md` | Event requirements, positioning, gap analysis |
+| `docs/event/PITCH_DECK_DRAFT.md` | Day 2 pitch deck draft and 3-minute demo script |
+| `docs/security/DAY2_SECURITY_REVIEW.md` | Day 2 security review: findings, CWE/CVE, mitigations |
+| `docs/handoff/DAY2.md` | Day 2 hand-off (Zayed → Nomai) |
+| `docs/ROADMAP.md` | Planned features (hardening checks, CVE lookup) — not built yet |
 | `docs/ReverseShield_Project_Report_and_Plan.pdf` | Project report and plan |
 | `docs/ReverseShield_3-Day_Execution_Plan.pdf` | Earlier three-day plan |
 
 ## Version
 
 `0.3.0-team` — see `CHANGELOG.md`.
+
+
+## Day 3 privacy and sharing
+
+All API reads and writes require the per-session token. Open the workbench
+page to bootstrap it; `/api/status` does not disclose it. The browser sends
+the token in a header, including downloads. Host, Origin, Referer and browser
+fetch-site checks protect against foreign websites. This is local browser
+request protection, not user accounts, enterprise IAM or protection from a
+malicious process running as the same OS user.
+
+Analysis reads target bytes locally and never runs the target. The application
+has no telemetry or cloud analysis upload. Setup downloads third-party tools;
+developer security scanners may download rules. Inputs, reports and temporary
+analysis workspaces live in `runs/` until manually removed. Stop the server
+before deleting unwanted runs; the job index resets on restart. There is no
+encrypted evidence store or cumulative disk quota: monitor available space.
+
+Use **Download sanitized report** for sharing. It creates a separate JSON
+summary, retaining hashes, numerical measurements, coverage and tool status.
+Raw output, recovered code, artifacts, event text, commands and environment
+values are omitted; identifiable paths and known secret patterns are redacted.
+The original local report is unchanged. This is not a universal secret detector;
+review the exported summary before publishing. The authenticated `/report`
+endpoint remains an internal raw-evidence route. `/report-sanitized` is the
+shareable route. Changed binaries are not sanitized reports and may retain
+embedded strings; do not publish them as proof of privacy.
+
+Offline export (refuses to overwrite the source or an existing destination):
+
+```sh
+python sanitize_report.py runs/JOB_ID/report.json sanitized-report.json
+```
+
+Day 3 verification and unresolved release gates are recorded in
+`docs/handoff/DAY3.md`. Older PDF/DOCX reports and Day 2 screenshots describe
+earlier builds; use the Day 3 evidence for current security claims.

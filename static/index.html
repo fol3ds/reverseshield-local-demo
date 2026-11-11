@@ -3,64 +3,215 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <title>ReverseShield — Static Analysis Workbench</title>
+  <meta name="color-scheme" content="light dark">
+  <title>ReverseShield — Reverse-Engineering Exposure Workbench</title>
   <link rel="stylesheet" href="/static/workbench.css">
   <script src="/static/workbench.js" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to workbench</a>
 <header class="masthead">
-  <div class="brand"><span class="prompt">~/reverseshield</span><span class="path">$ static_workbench</span></div>
+  <div class="brand"><span class="prompt">ReverseShield</span><span class="path">What can a reverse engineer learn from your program?</span></div>
   <nav class="tabs" aria-label="Workbench views">
-    <button type="button" class="tab active" data-page="operate" aria-current="page"><span>01</span> Operate</button>
-    <button type="button" class="tab" data-page="compare"><span>02</span> Compare</button>
-    <button type="button" class="tab" data-page="monitor"><span>03</span> Monitor</button>
-    <button type="button" class="tab" data-page="readme"><span>04</span> Read Me</button>
+    <button type="button" class="tab active" data-page="operate" aria-current="page"><span>1</span>Operate</button>
+    <button type="button" class="tab" data-page="compare"><span>2</span>Compare</button>
+    <button type="button" class="tab" data-page="monitor"><span>3</span>Monitor</button>
+    <button type="button" class="tab" data-page="readme"><span>4</span>Read Me</button>
   </nav>
-  <span class="badge" id="connectionText" role="status">Connecting to local API…</span>
+  <div class="header-tools">
+    <button type="button" id="themeToggle" class="theme-toggle" aria-pressed="false">Dark mode</button>
+    <span class="badge" id="connectionText" role="status">Connecting to the local server…</span>
+  </div>
 </header>
 <main id="main" class="wrap">
-  <div class="topline"><span>LOCAL WORKBENCH / <strong>STATIC ONLY</strong></span><span id="versionText">Targets are never executed</span></div>
+  <div class="topline"><span>Local workbench · <strong>static analysis only</strong></span><span id="versionText">Programs are read as data and never executed</span></div>
   <div id="globalMessage" class="notice" role="alert" hidden></div>
+
   <section id="operate" class="page" aria-labelledby="operateTitle">
-    <div class="page-head"><div><p class="eyebrow">Discover → select → inspect</p><h1 id="operateTitle">Operate</h1></div><p class="muted">Read the file. Inspect the evidence.<br>No target execution. No security score.</p></div>
+    <div class="page-head">
+      <div><p class="eyebrow">Choose a file → pick targets → read the report</p><h1 id="operateTitle">Analyze a program</h1></div>
+      <p class="muted">ReverseShield reads the file with standard analysis tools and shows what they recovered. The program is never run, and there is no security score.</p>
+    </div>
     <div class="workbench-layout">
       <div class="main-col">
+        <section class="panel demo-panel" aria-labelledby="demoTitle">
+          <div class="panel-head"><h2 id="demoTitle">Quick start: one-click demo</h2><span class="micro">Bundled sample · Level 5</span></div>
+          <p>Analyzes <strong>Level 5 · Policy Engine</strong>, a small program written by the team, with every available tool, then opens the report. Nothing starts until you click. The sample is read as data and never executed.</p>
+          <div class="actions"><button type="button" id="runDemoBtn" class="btn primary" disabled>Run demo · Level 5</button><span id="demoState" class="inline-state" role="status" aria-live="polite">Ready when the local server and sample list have loaded.</span></div>
+        </section>
+
         <section class="panel" aria-labelledby="sourceTitle">
-          <div class="panel-head"><h2 id="sourceTitle"><span class="step">01</span> Select a source</h2><span class="micro">LOCAL INPUTS ONLY</span></div>
-          <div class="source-row"><div class="source-label">Installed app<span>Flatpak application payload</span></div><div class="field"><label for="appSelect">Installed Flatpak</label><select id="appSelect" disabled><option value="">Loading installed applications…</option></select></div><div class="actions"><button type="button" id="refreshAppsBtn" class="btn" disabled>Refresh</button><button type="button" id="discoverAppBtn" class="btn" disabled>Discover</button></div></div>
-          <p id="appsMessage" class="field-help">Runtime dependencies are listed separately, not scanned.</p>
-          <div class="source-row"><div class="source-label">Local path<span>Folder / RPM / ELF / PE</span></div><div class="field"><label for="localPath">Absolute path on the server machine</label><input id="localPath" type="text" placeholder="/home/you/application" autocomplete="off" spellcheck="false"><span class="field-help">Use a local path, not a URL. Directories are discovered, not executed. Windows PE is supported on Windows builds.</span></div><button type="button" id="discoverPathBtn" class="btn" disabled>Discover path</button></div>
-          <div class="source-row"><div class="source-label">Upload file<span>ELF / PE / RPM</span></div><div class="field"><label for="fileInput">Choose file contents</label><input id="fileInput" type="file" accept=".elf,.exe,.dll,.rpm,application/octet-stream,application/x-rpm"><span class="field-help">File bytes go to this local server. No absolute upload path is needed.</span></div><button type="button" id="ingestBtn" class="btn" disabled>Upload & discover</button></div>
-          <div class="source-row"><div class="source-label">Bundled sample<span>Authored analysis examples</span></div><div class="field"><label for="sampleSelect">Sample application</label><select id="sampleSelect" disabled><option value="">Loading samples…</option></select><span id="sampleDescription" class="field-help">Compiled samples are inspected, never launched. Windows targets are inspected as PE data.</span></div><button type="button" id="discoverSampleBtn" class="btn" disabled>Choose sample</button></div>
-          <p id="discoveryState" class="inline-state" role="status">Choose a source to preview its analyzable targets.</p>
+          <div class="panel-head"><h2 id="sourceTitle"><span class="step">1</span>Choose what to analyze</h2><span class="micro">Files stay on this computer</span></div>
+          <div class="source-row">
+            <div class="source-label">Bundled sample<span>Best for a first try</span></div>
+            <div class="field"><label for="sampleSelect">Sample program</label><select id="sampleSelect" disabled><option value="">Loading samples…</option></select><span id="sampleDescription" class="field-help">Samples are inspected, never launched.</span></div>
+            <button type="button" id="discoverSampleBtn" class="btn" disabled>Use sample</button>
+          </div>
+          <div class="source-row">
+            <div class="source-label">Upload a file<span>Linux ELF, Windows .exe/.dll, or RPM</span></div>
+            <div class="field"><span>File to upload</span><div class="file-picker"><label class="btn compact" for="fileInput">Choose file…</label><span id="fileName" class="file-name">No file chosen</span><input id="fileInput" class="sr-only" type="file" accept=".elf,.exe,.dll,.rpm,application/octet-stream,application/x-rpm"></div><span class="field-help">The file is copied to this local server only.</span></div>
+            <button type="button" id="ingestBtn" class="btn" disabled>Upload</button>
+          </div>
+          <div class="source-row">
+            <div class="source-label">File or folder on this computer<span>Full path to a program or app folder</span></div>
+            <div class="field"><label for="localPath">Full path</label><input id="localPath" type="text" placeholder="C:\Windows\System32\notepad.exe  or  /home/you/app" autocomplete="off" spellcheck="false"><span class="field-help">Folders are scanned for programs; nothing is run. Network (\\server) paths are not allowed.</span></div>
+            <button type="button" id="discoverPathBtn" class="btn" disabled>Find programs</button>
+          </div>
+          <div class="source-row">
+            <div class="source-label">Installed Flatpak app<span>Linux only</span></div>
+            <div class="field"><label for="appSelect">Installed application</label><select id="appSelect" disabled><option value="">Loading installed applications…</option></select><span id="appsMessage" class="field-help">Shared runtime libraries are listed, not scanned.</span></div>
+            <div class="actions"><button type="button" id="refreshAppsBtn" class="btn compact" disabled>Refresh</button><button type="button" id="discoverAppBtn" class="btn" disabled>Use app</button></div>
+          </div>
+          <p id="discoveryState" class="inline-state" role="status">Choose a source above to see the programs it contains.</p>
         </section>
+
         <section class="panel" aria-labelledby="targetsTitle">
-          <div class="panel-head"><h2 id="targetsTitle"><span class="step">02</span> Preview targets</h2><span id="selectionCount" class="micro">NO SELECTION</span></div>
-          <div class="selection-heading"><strong id="selectionName">No source selected</strong><span id="selectionDetail" class="muted">Discovery does not start analysis.</span></div>
+          <div class="panel-head"><h2 id="targetsTitle"><span class="step">2</span>Pick files and start</h2><span id="selectionCount" class="micro">Nothing selected</span></div>
+          <div class="selection-heading"><strong id="selectionName">No source chosen yet</strong><span id="selectionDetail" class="muted">Choosing a source does not start any analysis.</span></div>
           <div id="discoveryWarnings" class="notice warning" hidden></div>
-          <div class="table-wrap targets"><table><caption class="sr-only">Discovered target files</caption><thead><tr><th scope="col"><input id="selectAllTargets" type="checkbox" aria-label="Select all analyzable targets" disabled></th><th scope="col">Relative path</th><th scope="col">Size</th><th scope="col">Availability / reason</th></tr></thead><tbody id="targetRows"><tr><td colspan="4" class="empty">Discover a source to list its targets.</td></tr></tbody></table></div>
-          <details class="details"><summary>Runtime / dependencies <span id="runtimeSummary" class="muted">not collected</span></summary><pre id="runtimeDetails">No runtime information collected.</pre></details>
-          <div class="run-controls"><label class="authorization"><input id="authorization" type="checkbox"><span>I own or am authorized to inspect these benign inputs with static tools.</span></label><p class="field-help">This is not a malware sandbox. Do not submit suspicious or hostile files.</p><label class="field"><span class="micro">TRANSFORM PROFILE · SAMPLE OR BINARY COPY</span><select id="protectionProfile"><option value="constant_blinding">Demo constant blinding + opaque guard (sample)</option><option value="symbol_removal">GNU symbol removal (sample)</option><option value="binary_hygiene">Binary metadata hygiene (any ELF/PE copy)</option></select></label><div class="actions"><button type="button" id="analyzeBtn" class="btn primary" disabled>Analyze selected targets</button><button type="button" id="stripCompareBtn" class="btn" disabled>Transform copy &amp; compare</button></div><p id="runHint" class="field-help">Select targets and confirm authorization. Source profiles are sample-only; binary metadata hygiene works on one selected ELF/PE copy.</p></div>
+          <div class="table-wrap targets"><table><caption class="sr-only">Programs found in the chosen source</caption><thead><tr><th scope="col"><input id="selectAllTargets" type="checkbox" aria-label="Select all programs that can be analyzed" disabled></th><th scope="col">File</th><th scope="col">Size</th><th scope="col">Type and status</th></tr></thead><tbody id="targetRows"><tr><td colspan="4" class="empty">Choose a source to list its programs.</td></tr></tbody></table></div>
+          <details class="details"><summary>Shared libraries this app depends on: <span id="runtimeSummary" class="muted">not collected</span></summary><pre id="runtimeDetails">No dependency information collected.</pre></details>
+          <div class="run-controls">
+            <label class="authorization"><input id="authorization" type="checkbox"><span>I own these files or have permission to inspect them, and they are not malware.</span></label>
+            <p class="field-help">This is not a malware sandbox. Do not submit suspicious or hostile files.</p>
+            <div id="ghidraOptions" class="ghidra-options" hidden>
+              <p class="warn-text">Ghidra (the decompiler) is selected. It may take several minutes on large files. It stops at the time limit below and its temporary files are deleted.</p>
+              <div class="option-row">
+                <label class="field" for="ghidraTimeout"><span>Ghidra time limit (seconds)</span><input id="ghidraTimeout" type="text" inputmode="numeric" pattern="[0-9]*" value="240" autocomplete="off"></label>
+                <label class="field" for="ghidraCpu"><span>Ghidra CPU cores</span><input id="ghidraCpu" type="text" inputmode="numeric" pattern="[0-9]*" value="2" autocomplete="off"></label>
+              </div>
+              <div id="largeTargetWarning" class="notice warning" role="alert" hidden><p id="largeTargetText">A large file is selected.</p><div class="actions"><button type="button" id="lightweightBtn" class="btn">Skip Ghidra (lightweight tools only)</button><label class="authorization"><input id="allowLargeGhidra" type="checkbox"><span>Run Ghidra anyway (may take several minutes)</span></label></div></div>
+            </div>
+            <div class="actions"><button type="button" id="analyzeBtn" class="btn primary" disabled>Analyze selected files</button></div>
+            <p id="runHint" class="field-help" role="status" aria-live="polite">Choose a source, select files and confirm the checkbox to enable analysis.</p>
+            <div class="compare-controls">
+              <h3>Optional: test a release-hygiene change</h3>
+              <p class="field-help">Makes a changed <strong>copy</strong>, analyzes it again and shows before/after on the Compare page. The original file is never modified.</p>
+              <div class="actions">
+                <label class="field" for="protectionProfile"><span>Change to apply to the copy</span><select id="protectionProfile"><option value="constant_blinding">Hide constants (demo, bundled samples only)</option><option value="symbol_removal">Remove symbol names (bundled samples only)</option><option value="binary_hygiene">Remove debug info and build metadata (any one file)</option></select></label>
+                <button type="button" id="stripCompareBtn" class="btn" disabled>Make copy &amp; compare</button>
+              </div>
+            </div>
+          </div>
         </section>
-        <section id="evidencePanel" class="panel" aria-label="Analysis evidence"><div class="panel-head"><h2><span class="step">03</span> Inspect evidence</h2><a id="downloadReportBtn" class="btn compact" hidden download>Download full JSON</a></div><div id="evidenceWarnings" class="notice warning" hidden></div><label class="field result-target" for="resultTargetSelect"><span>Result target</span><select id="resultTargetSelect" disabled><option value="">No results collected</option></select></label><div id="evidenceContent"><p class="empty">Evidence appears when a job returns results. Partial results remain downloadable.</p></div></section>
+
+        <section id="evidencePanel" class="panel" aria-labelledby="resultsTitle" tabindex="-1">
+          <div class="panel-head"><h2 id="resultsTitle"><span class="step">3</span>Report</h2><a id="downloadReportBtn" class="btn compact" hidden download>Download sanitized report</a></div>
+          <div id="evidenceWarnings" class="notice warning" hidden></div>
+          <label class="field result-target" for="resultTargetSelect"><span>Show report for</span><select id="resultTargetSelect" disabled><option value="">No results yet</option></select></label>
+          <div id="evidenceContent"><p class="empty">The report appears here when an analysis finishes. Partial results can still be downloaded.</p></div>
+        </section>
       </div>
+
       <aside class="side-col">
-        <section class="panel" aria-labelledby="toolsTitle"><div class="panel-head"><h2 id="toolsTitle">Analysis tools</h2><button type="button" id="refreshStatusBtn" class="btn compact">Refresh</button></div><label class="field" for="toolMode"><span>Tool selection</span><select id="toolMode"><option value="all">All available tools</option><option value="manual">Manual selection / opt out</option></select></label><div id="toolList" class="tool-list"><p class="empty">Checking local tools…</p></div><p class="field-help">Unavailable adapters are never selected. Missing output is a coverage limit, not a successful defense.</p></section>
-        <section id="activeJobPanel" class="panel" aria-label="Active job"><div class="panel-head"><h2>Active job</h2><span id="jobStatus" class="badge" role="status">Idle</span></div><p id="jobId" class="job-id">No job selected</p><p id="jobLatest" class="muted">Backend events appear here when work starts.</p><div class="actions"><button type="button" id="cancelJobBtn" class="btn danger" disabled>Cancel job</button><button type="button" id="resumeJobBtn" class="btn" hidden>Resume polling</button></div><button type="button" class="text-button" data-page="monitor">Open events & recent runs →</button></section>
-        <section class="panel boundary"><h2>Execution boundary</h2><p>Static tools read selected files.<br><strong>Targets are never executed.</strong></p><p>Transformations change copies only: sample-only source profiles, or binary metadata hygiene for one selected ELF or PE. Behavior is not verified.</p><button type="button" class="text-button" data-page="readme">Read workflow & limitations →</button></section>
+        <section class="panel" aria-labelledby="toolsTitle">
+          <div class="panel-head"><h2 id="toolsTitle">Analysis tools</h2><button type="button" id="refreshStatusBtn" class="btn compact">Refresh</button></div>
+          <label class="field" for="toolMode"><span>Which tools to run</span><select id="toolMode"><option value="all">All installed tools</option><option value="manual">Let me choose</option></select></label>
+          <div id="toolList" class="tool-list"><p class="empty">Checking installed tools…</p></div>
+          <p class="field-help">Tools that are not installed are skipped and listed in the report. A missing result is a gap in coverage, not a sign the program is safe.</p>
+        </section>
+        <section id="activeJobPanel" class="panel" aria-labelledby="jobTitle">
+          <div class="panel-head"><h2 id="jobTitle">Current analysis</h2><span id="jobStatus" class="badge" role="status">Idle</span></div>
+          <p id="jobLatest" class="muted">Progress messages appear here when an analysis starts.</p>
+          <p id="jobId" class="job-id">No analysis started yet</p>
+          <div class="actions"><button type="button" id="cancelJobBtn" class="btn danger" disabled>Cancel</button><button type="button" id="resumeJobBtn" class="btn" hidden>Reconnect</button></div>
+          <button type="button" class="text-button" data-page="monitor">See the full activity log →</button>
+        </section>
+        <section class="panel boundary" aria-labelledby="safetyTitle">
+          <h2 id="safetyTitle">Safety</h2>
+          <p><strong>Programs are never executed.</strong> Tools only read the file.</p>
+          <p class="muted">Changes are made to copies only. Behaviour of a changed copy is not verified.</p>
+          <button type="button" class="text-button" data-page="readme">How it works and limitations →</button>
+        </section>
       </aside>
     </div>
   </section>
-  <section id="compare" class="page" hidden aria-labelledby="compareTitle"><div class="page-head"><div><p class="eyebrow">Original / transformed copy</p><h1 id="compareTitle">Compare</h1></div><div class="actions"><a id="comparisonReportLink" class="btn" hidden download>Download full JSON</a><a id="downloadArtifactBtn" class="btn" hidden download>Download stripped copy</a></div></div><div id="comparisonEmpty" class="panel empty">Run a sample comparison or a binary hygiene comparison to inspect before and after evidence.</div><div id="comparisonContent" hidden><div class="notice warning" id="comparisonWarnings"></div><div class="panel comparison-overview"><div class="panel-head"><h2 id="transformationState">Transformation evidence</h2><label class="field" for="compareMode"><span>Comparison view</span><select id="compareMode"><option value="basic">Basic metadata & differences</option><option value="pseudocode">Pseudocode</option><option value="graphs">Graphs</option><option value="all">All evidence</option></select></label></div><div id="transformationDetails"></div><div id="comparisonMetrics"></div><div id="comparisonDiffs"></div></div><p class="field-help comparison-note">Function selectors are independent. Matching names or addresses do not establish equivalent functions or behavior.</p><div class="compare-grid"><section class="panel"><div class="panel-head"><h2>Before · original sample</h2><span class="micro">UNMODIFIED</span></div><div id="compareBefore"></div></section><section class="panel"><div class="panel-head"><h2>After · stripped copy</h2><span class="micro">COPY ONLY</span></div><div id="compareAfter"></div></section></div></div></section>
-  <section id="monitor" class="page" hidden aria-labelledby="monitorTitle"><div class="page-head"><div><p class="eyebrow">Backend events / recorded evidence</p><h1 id="monitorTitle">Monitor</h1></div><button type="button" id="refreshJobsBtn" class="btn">Refresh recent jobs</button></div><div class="monitor-layout"><section class="panel"><div class="panel-head"><h2>Live event stream</h2><span class="micro" id="eventCount">NO EVENTS</span></div><p id="monitorJobLabel" class="muted">Choose a job to inspect its events.</p><div id="monitorError" class="notice" hidden></div><div id="jobEvents" class="event-stream" role="log" aria-label="Actual backend job events" aria-live="polite" aria-relevant="additions" tabindex="0"><p class="empty">No backend events received.</p></div><p class="field-help">Only recorded backend events are displayed. No estimated progress or synthetic logs.</p></section><section class="panel"><div class="panel-head"><h2>Recent runs</h2><span class="micro">OPEN / RESUME</span></div><div id="recentJobs"><p class="empty">Loading recent jobs…</p></div><p class="field-help">Open a running job to resume polling. Reopen a finished job to inspect its report.</p></section></div></section>
+
+  <section id="compare" class="page" hidden aria-labelledby="compareTitle">
+    <div class="page-head">
+      <div><p class="eyebrow">Original file vs. changed copy</p><h1 id="compareTitle">Compare before and after</h1></div>
+      <div class="actions"><a id="comparisonReportLink" class="btn" hidden download>Download sanitized report</a><a id="downloadArtifactBtn" class="btn" hidden download>Download changed copy</a></div>
+    </div>
+    <div id="comparisonEmpty" class="panel empty">No comparison yet. On the Operate page, choose a change under “Optional: test a release-hygiene change” and press <strong>Make copy &amp; compare</strong>.</div>
+    <div id="comparisonContent" hidden>
+      <div class="notice warning" id="comparisonWarnings"></div>
+      <div class="panel comparison-overview">
+        <div class="panel-head"><h2 id="transformationState">Change applied</h2><label class="field" for="compareMode"><span>Show in the panels below</span><select id="compareMode"><option value="basic">Summary and metrics</option><option value="pseudocode">Recovered code (pseudocode)</option><option value="graphs">Call graphs</option><option value="all">Everything</option></select></label></div>
+        <div id="transformationDetails"></div>
+        <div id="comparisonSummary" class="summary-grid" aria-label="What changed and what did not change"></div>
+        <div id="comparisonMetrics"></div>
+        <div id="comparisonFunctions"></div>
+        <div id="comparisonDiffs"></div>
+      </div>
+      <div id="comparisonLimitations" class="panel limitations-box" aria-label="Comparison limitations"></div>
+      <p class="field-help comparison-note">The two panels below are independent. A function with the same name or address in both does not prove it does the same thing.</p>
+      <div class="compare-grid">
+        <section class="panel"><div class="panel-head"><h2 id="compareBeforeTitle">Before · original sample</h2><span class="badge">Unchanged</span></div><div id="compareBefore"></div></section>
+        <section class="panel"><div class="panel-head"><h2 id="compareAfterTitle">After · changed copy</h2><span class="badge">Copy only</span></div><div id="compareAfter"></div></section>
+      </div>
+    </div>
+  </section>
+
+  <section id="monitor" class="page" hidden aria-labelledby="monitorTitle">
+    <div class="page-head">
+      <div><p class="eyebrow">Live messages from the analysis tools</p><h1 id="monitorTitle">Activity log</h1></div>
+      <button type="button" id="refreshJobsBtn" class="btn">Refresh list</button>
+    </div>
+    <div class="monitor-layout">
+      <section class="panel" aria-labelledby="eventsTitle">
+        <div class="panel-head"><h2 id="eventsTitle">Messages</h2><span class="micro" id="eventCount">No messages yet</span></div>
+        <p id="monitorJobLabel" class="muted">Start an analysis or open a previous one to see its messages.</p>
+        <div id="monitorError" class="notice" hidden></div>
+        <div id="jobEvents" class="event-stream" role="log" aria-label="Messages recorded by the analysis server" aria-live="polite" aria-relevant="additions" tabindex="0"><p class="empty">No messages received yet.</p></div>
+        <p class="field-help">Only real messages from the server are shown. There is no estimated progress bar.</p>
+      </section>
+      <section class="panel" aria-labelledby="recentTitle">
+        <div class="panel-head"><h2 id="recentTitle">Previous analyses</h2></div>
+        <div id="recentJobs"><p class="empty">Loading…</p></div>
+        <p class="field-help">Open a finished analysis to see its report again, or reconnect to one that is still running.</p>
+      </section>
+    </div>
+  </section>
+
   <section id="readme" class="page" hidden aria-labelledby="readmeTitle">
-    <div class="page-head"><div><p class="eyebrow">Workflow / boundaries</p><h1 id="readmeTitle">Read Me</h1></div></div>
-    <div class="read-layout"><article class="panel prose"><h2>From application to evidence</h2><ol><li><strong>Discover a source.</strong> Choose an installed Flatpak, enter an absolute local folder/RPM/ELF/PE path, upload ELF/PE/RPM bytes, or choose a bundled sample.</li><li><strong>Review the preview.</strong> Select the ELF or PE targets you need. Each target shows its detected format. Non-analyzable entries show their reason. Runtime dependencies are listed separately; they are not scanned.</li><li><strong>Choose tools and authorize.</strong> All available analysis tools are selected by default. Use manual selection to opt out. Missing tools and partial results remain visible.</li><li><strong>Start a job.</strong> Monitor actual tool and phase events, cancel work when needed, and reopen recent runs. No percentage estimate is invented.</li><li><strong>Inspect the evidence.</strong> Browse metadata, functions, symbols, strings, pseudocode, actual graphs, and raw commands/output. Download the full JSON, including partial results.</li></ol></article><article class="panel prose"><h2>What comparison means</h2><p>Three profiles operate on <strong>copies</strong>: two sample-only source profiles (GNU symbol removal and a demo-grade constant-blinding transformation), and binary metadata hygiene for any selected ELF or PE. Each is followed by a fresh static analysis.</p><p>They are labelled <strong>Symbol removal applied</strong>, <strong>Demo obfuscation applied</strong>, or <strong>Binary metadata hygiene applied</strong>. None is a protection certification or a reverse-engineering resistance score.</p><p>Before and after function selections are independent. Names may disappear after stripping; the interface does not claim matching functions or equivalent behavior.</p><h2>Hard boundaries</h2><ul><li>Targets are never executed. Dynamic analysis is disabled.</li><li>This is not a malware sandbox. Only submit benign files you own or are authorized to inspect.</li><li>Behavior is not verified before or after either transformation.</li><li>Unavailable pseudocode or graphs mean unavailable / not collected, not that a file is secure.</li><li>Displayed evidence can be capped for responsiveness; tool truncation and report limitations are shown. Use JSON for all returned evidence.</li><li>The page uses local assets only: no remote fonts, analysis services, or graph libraries.</li></ul></article></div>
+    <div class="page-head"><div><p class="eyebrow">Plain-language guide</p><h1 id="readmeTitle">How ReverseShield works</h1></div></div>
+    <div class="read-layout">
+      <article class="panel prose">
+        <h2>From a program to a report</h2>
+        <ol>
+          <li><strong>Choose a source.</strong> A bundled sample, an uploaded file, a file or folder on this computer, or (on Linux) an installed Flatpak app.</li>
+          <li><strong>Pick the files.</strong> Each program shows its type: <strong>ELF</strong> (Linux) or <strong>PE</strong> (Windows). Files that cannot be analyzed show why.</li>
+          <li><strong>Confirm and start.</strong> All installed tools run by default; choose “Let me choose” to skip some.</li>
+          <li><strong>Watch the activity log.</strong> Each tool’s messages appear live. You can cancel at any time.</li>
+          <li><strong>Read the report.</strong> It starts with plain-language findings: names, debug information, file paths and code that could be recovered. Details are in the tabs below the findings.</li>
+        </ol>
+        <h2>What the numbers mean</h2>
+        <ul>
+          <li><strong>Symbol names</strong> are function and variable names left in the file. They make reverse engineering much easier.</li>
+          <li><strong>Debug information</strong> can reveal source file names, line numbers and variable types.</li>
+          <li><strong>Entropy</strong> runs from 0 to 8. Normal code is about 4–6; values near 8 usually mean compressed or encrypted data.</li>
+          <li><strong>Imports</strong> are functions the program borrows from system libraries. They hint at what it does (files, network, crypto).</li>
+          <li><strong>N/A</strong> means “not collected” (for example a tool was not installed). It never means zero.</li>
+        </ul>
+      </article>
+      <article class="panel prose">
+        <h2>What a comparison shows</h2>
+        <p>You can apply one change to a <strong>copy</strong> and analyze it again: hide constants (demo), remove symbol names, or remove debug info and build metadata. The Compare page lists what changed, what did not, and which functions still match.</p>
+        <p>None of these changes is real protection or a security certificate. Ghidra can usually still recover the program logic.</p>
+        <h2>Hard limits</h2>
+        <ul>
+          <li>Programs are never executed. Dynamic analysis is disabled.</li>
+          <li>This is not a malware sandbox. Only use files you own or are allowed to inspect.</li>
+          <li>The behaviour of a changed copy is not tested.</li>
+          <li>Missing pseudocode or graphs means “not collected”, not “secure”.</li>
+          <li>Long tables and graphs are shortened on screen; the downloaded JSON report has everything collected.</li>
+          <li>The page uses only local files: no web fonts, cloud services or tracking.</li>
+        </ul>
+      </article>
+    </div>
   </section>
 </main>
-<footer>ReverseShield <span>·</span> local static-analysis workbench <span>·</span> no target execution <span>·</span> no security claims</footer>
-<noscript><p class="notice">JavaScript is required to connect to the local analysis API.</p></noscript>
+<footer>ReverseShield <span>·</span> local static-analysis workbench <span>·</span> programs are never executed <span>·</span> no security score</footer>
+<noscript><p class="notice">JavaScript is required to connect to the local analysis server.</p></noscript>
 </body>
 </html>

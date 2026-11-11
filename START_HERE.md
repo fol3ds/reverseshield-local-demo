@@ -64,9 +64,15 @@ Ghidra and JDK are under `tools/` in the full project.
 
 ## First five minutes in the UI
 
-1. **Operate** → choose **Bundled sample** → `Level 5 · Policy Engine`.
-2. Leave the targets selected and run **Analyze selected targets**.
-3. Watch the live tool log; open the report when the job completes.
+Fastest path: press **Run demo · Level 5** at the top of **Operate**. It does
+steps 1–3 below for you and opens the report.
+
+1. **Operate** → **Bundled sample** → `Level 5 · Policy Engine` → **Use sample**.
+2. Leave the file selected, tick the permission checkbox and press **Analyze selected files**.
+3. Watch the live tool log; open the report when the job completes. The
+   report opens with **What someone could learn from this file**, then the
+   **Overview** tab explains every number. Use the **Dark mode** button if you
+   prefer a dark page.
 4. Open **Compare** → choose a profile:
    - `symbol_removal` or `constant_blinding` for a bundled sample;
    - `binary_hygiene` for any one selected ELF/PE copy.
@@ -96,6 +102,9 @@ Ghidra and JDK are under `tools/` in the full project.
 | Ghidra unavailable | Run `setup.bat` again; check `tools\windows\jdk25\bin\java.exe`; check `Java` in the app's status panel. |
 | Ghidra is slow on a large app | Select a single target, disable Ghidra for that run, or use a smaller sample. |
 | Antivirus quarantines a download | Allow the project folder or use the offline release; do not disable antivirus globally. |
+| "contains a character that cmd.exe would interpret" | Ghidra is refused when the project folder path contains `& | < > ^ % !` or a quote. Move the project to a plain folder such as `C:\ReverseShield\reverseshield-local-demo`. |
+| "Network (UNC) paths are not supported" | Copy the files from the network share to a local folder, then use that local path. |
+| "Large target … Ghidra may take several minutes" | Press **Skip Ghidra (lightweight tools only)**, or tick **Run Ghidra anyway** and raise the Ghidra time limit. |
 | Reports contain local paths | Use the sanitized export before sharing; see `docs/AI_CONTEXT.md` §10. |
 
 ## Safety reminder
@@ -103,3 +112,40 @@ Ghidra and JDK are under `tools/` in the full project.
 Only analyse applications you own or are authorised to inspect. The bundled
 samples are self-authored. Do not upload malware, customer data, credentials or
 third-party binaries without permission.
+
+
+## Day 3 privacy and sharing
+
+All API reads and writes require the per-session token. Open the workbench
+page to bootstrap it; `/api/status` does not disclose it. The browser sends
+the token in a header, including downloads. Host, Origin, Referer and browser
+fetch-site checks protect against foreign websites. This is local browser
+request protection, not user accounts, enterprise IAM or protection from a
+malicious process running as the same OS user.
+
+Analysis reads target bytes locally and never runs the target. The application
+has no telemetry or cloud analysis upload. Setup downloads third-party tools;
+developer security scanners may download rules. Inputs, reports and temporary
+analysis workspaces live in `runs/` until manually removed. Stop the server
+before deleting unwanted runs; the job index resets on restart. There is no
+encrypted evidence store or cumulative disk quota: monitor available space.
+
+Use **Download sanitized report** for sharing. It creates a separate JSON
+summary, retaining hashes, numerical measurements, coverage and tool status.
+Raw output, recovered code, artifacts, event text, commands and environment
+values are omitted; identifiable paths and known secret patterns are redacted.
+The original local report is unchanged. This is not a universal secret detector;
+review the exported summary before publishing. The authenticated `/report`
+endpoint remains an internal raw-evidence route. `/report-sanitized` is the
+shareable route. Changed binaries are not sanitized reports and may retain
+embedded strings; do not publish them as proof of privacy.
+
+Offline export (refuses to overwrite the source or an existing destination):
+
+```sh
+python sanitize_report.py runs/JOB_ID/report.json sanitized-report.json
+```
+
+Day 3 verification and unresolved release gates are recorded in
+`docs/handoff/DAY3.md`. Older PDF/DOCX reports and Day 2 screenshots describe
+earlier builds; use the Day 3 evidence for current security claims.

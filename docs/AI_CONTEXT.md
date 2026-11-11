@@ -60,6 +60,7 @@ Any change must preserve these:
 | `rpm_ingest.py` | Bounded RPM header/payload extraction (Linux only) |
 | `engine.py` | Tool adapters, cross-platform process runner, parsers, Ghidra export |
 | `analysis.py` | ELF/PE header parsing and legacy metadata helpers |
+| `metrics.py` | Bounded content metrics from file bytes (sections, entropy, imports/exports, strings, debug flags) |
 | `workflow.py` | Selections, async jobs, events, comparison, protections |
 | `demo_protection.py` | Sample-only C source transformer and protected build |
 | `binary_protection.py` | Binary-only metadata hygiene on a copy |
@@ -78,7 +79,8 @@ source (Flatpak / folder / RPM / upload / sample)
   -> selection (target IDs + absolute paths + identity)
   -> job start (authorization required)
   -> snapshot copy under runs/<job_id>/original-N.<ext>
-  -> engine.analyze(snapshot) with selected tools
+  -> engine.analyze(snapshot, options) with selected tools
+     (+ metrics.content_metrics(snapshot) and a coverage summary)
   -> events.jsonl + report.json + Ghidra export/logs
   -> optional transform on the snapshot copy
   -> reanalyze the transformed copy
@@ -191,7 +193,7 @@ are recorded in `docs/handoff/DAY1.md`.
 ```bash
 python3 -m unittest discover -s tests -v
 RUN_GHIDRA_TESTS=1 python3 -m unittest tests.test_engine -v
-python3 -m py_compile app.py analysis.py workflow.py engine.py discovery.py \
+python3 -m py_compile app.py analysis.py workflow.py engine.py discovery.py metrics.py \
   rpm_ingest.py demo_protection.py binary_protection.py platform_support.py http_upgrade.py
 node --check static/workbench.js
 ```
@@ -206,8 +208,13 @@ Never add a test that executes a bundled sample or a selected target.
 - Ghidra needs a writable project directory; the workflow deletes the temporary
   project and keeps only the JSON export/logs.
 - `readelf` is ELF-only; do not call it on PE.
-- The comparison counts mix ELF symbols and Ghidra labels; do not present them
-  as a resistance score.
+- "Parsed symbol entries" is the merged list (ELF symbols + Ghidra labels).
+  Use `content_metrics.symbols` (`elf_symbols`, `readelf_symbols`,
+  `nm_symbols`, `ghidra_symbols`) when a source-specific count is needed. None
+  of these is a resistance score.
+- Missing metrics are `null` in JSON and `N/A` in the UI; never coerce to 0.
+- Never launch a `.bat`/`.cmd` with arguments containing `& | < > ^ % !` or
+  quotes; `platform_support.command_for` refuses them (BatBadBut class).
 - A failed reanalysis must preserve the baseline report and transformation
   state.
 - Sequential ZIP editing causes merge conflicts; use the Git workflow in
@@ -219,3 +226,40 @@ Never add a test that executes a bundled sample or a selected target.
 - `docs/IS_CYBERNEXT_REQUIREMENTS.md` — event requirements and gap analysis.
 - `docs/GITHUB_WORKFLOW.md` — beginner Git/GitHub Desktop handoff.
 - `START_HERE.md` — Windows/Linux setup and run instructions.
+
+
+## Day 3 privacy and sharing
+
+All API reads and writes require the per-session token. Open the workbench
+page to bootstrap it; `/api/status` does not disclose it. The browser sends
+the token in a header, including downloads. Host, Origin, Referer and browser
+fetch-site checks protect against foreign websites. This is local browser
+request protection, not user accounts, enterprise IAM or protection from a
+malicious process running as the same OS user.
+
+Analysis reads target bytes locally and never runs the target. The application
+has no telemetry or cloud analysis upload. Setup downloads third-party tools;
+developer security scanners may download rules. Inputs, reports and temporary
+analysis workspaces live in `runs/` until manually removed. Stop the server
+before deleting unwanted runs; the job index resets on restart. There is no
+encrypted evidence store or cumulative disk quota: monitor available space.
+
+Use **Download sanitized report** for sharing. It creates a separate JSON
+summary, retaining hashes, numerical measurements, coverage and tool status.
+Raw output, recovered code, artifacts, event text, commands and environment
+values are omitted; identifiable paths and known secret patterns are redacted.
+The original local report is unchanged. This is not a universal secret detector;
+review the exported summary before publishing. The authenticated `/report`
+endpoint remains an internal raw-evidence route. `/report-sanitized` is the
+shareable route. Changed binaries are not sanitized reports and may retain
+embedded strings; do not publish them as proof of privacy.
+
+Offline export (refuses to overwrite the source or an existing destination):
+
+```sh
+python sanitize_report.py runs/JOB_ID/report.json sanitized-report.json
+```
+
+Day 3 verification and unresolved release gates are recorded in
+`docs/handoff/DAY3.md`. Older PDF/DOCX reports and Day 2 screenshots describe
+earlier builds; use the Day 3 evidence for current security claims.

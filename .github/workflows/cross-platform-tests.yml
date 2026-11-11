@@ -18,6 +18,7 @@ jobs:
         with:
           python-version: "3.12"
       - uses: msys2/setup-msys2@v2
+        id: msys2
         with:
           msystem: MINGW64
           update: true
@@ -25,8 +26,12 @@ jobs:
       - name: Run Windows suite
         shell: pwsh
         run: |
-          $mingw = 'C:\msys64\mingw64\bin'
+          # setup-msys2 installs into a temporary folder, not C:\msys64; use its output.
+          $root = '${{ steps.msys2.outputs.msys2-location }}'
+          $mingw = if ($root) { Join-Path $root 'mingw64\bin' } else { 'C:\msys64\mingw64\bin' }
+          if (-not (Test-Path $mingw)) { $mingw = 'C:\msys64\mingw64\bin' }
           if (Test-Path $mingw) { $env:PATH = "$mingw;$env:PATH" }
+          Get-Command objdump, readelf, node -ErrorAction SilentlyContinue | Format-Table Name, Source
           python -m unittest discover -s tests -v
 
   fedora:
@@ -36,6 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install test dependencies
-        run: dnf -y install python3 gcc binutils file flatpak rpm rpm-build cpio
+        # nodejs: the UI contract tests run static/workbench.js with Node.
+        run: dnf -y install python3 gcc binutils file flatpak rpm rpm-build cpio nodejs
       - name: Run Fedora suite
         run: python3 -m unittest discover -s tests -v

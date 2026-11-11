@@ -94,6 +94,14 @@ class FlatpakDiscoveryTests(unittest.TestCase):
             discovery.discover_flatpak_targets("com.example.Missing", runner=runner)
 
 
+class ToolLaunchErrorTests(unittest.TestCase):
+    def test_unlaunchable_tool_is_reported_as_unavailable(self):
+        def runner(*_args, **_kwargs):
+            raise PermissionError(13, "Permission denied", "flatpak")
+        with self.assertRaisesRegex(RuntimeError, "cannot be started: flatpak"):
+            discovery._command(["flatpak", "list"], runner)
+
+
 class PathDiscoveryTests(unittest.TestCase):
     @unittest.skipIf(os.name == "nt", "POSIX descriptor-relative symlink race is not a Windows path")
     def test_file_replaced_by_symlink_at_open_is_never_read(self):
@@ -139,6 +147,7 @@ class PathDiscoveryTests(unittest.TestCase):
                     discovery.discover_path(root, workspace=root / "work")
 
     @unittest.skipIf(os.name == "nt", "Windows ACL permissions are not changed by chmod(0)")
+    @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root bypasses chmod(0); run as a normal user")
     def test_unreadable_directory_is_reported_as_partial(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -159,7 +168,12 @@ class PathDiscoveryTests(unittest.TestCase):
             for folder in ("tools", "runs", "backups", ".git", ".hidden", ".venv", "venv", "node_modules", "bin"):
                 (root / folder).mkdir()
                 (root / folder / "sample").write_bytes(b"\x7fELF")
-            (root / "bin/alias").symlink_to(root / "bin/sample")
+            try:
+                (root / "bin/alias").symlink_to(root / "bin/sample")
+            except OSError:
+                # Windows needs Developer Mode or admin rights to create symlinks
+                # (WinError 1314); the folder and venv exclusions are still checked.
+                pass
             (root / "custom-environment").mkdir()
             (root / "custom-environment/pyvenv.cfg").write_text("home = unused")
             (root / "custom-environment/sample").write_bytes(b"\x7fELF")
@@ -175,7 +189,8 @@ class PathDiscoveryTests(unittest.TestCase):
             result = discovery.discover_path(source, workspace=Path(temporary) / "work")
             target = result["targets"][0]
             self.assertEqual(target["relative_path"], source.name)
-            self.assertEqual(target["absolute_path"], str(source))
+            self.assertEqual(os.path.normcase(os.path.realpath(target["absolute_path"])),
+                             os.path.normcase(os.path.realpath(source)))
             self.assertTrue(target["analyzable"])
             with source.open("ab") as stream:
                 stream.write(b"x")

@@ -15,6 +15,7 @@ import shutil
 import tempfile
 
 from analysis import detect_format, has_elf_magic, parse_elf_header, parse_pe_header, parse_sections
+from metrics import content_metrics
 from platform_support import IS_WINDOWS, command_for, local_tool_dirs, popen_kwargs, terminate_tree, which_tool
 import os
 from pathlib import Path
@@ -168,7 +169,7 @@ def inventory() -> dict:
             if path:
                 props = Path(path).resolve().parents[1] / "Ghidra/application.properties"
                 if props.is_file():
-                    match = re.search(r"^application.version=(.+)$", props.read_text(), re.M)
+                    match = re.search(r"^application.version=(.+)$", props.read_text(encoding="utf-8", errors="replace"), re.M)
                     if match:
                         version = "Ghidra " + match[1]
         elif path:
@@ -191,6 +192,44 @@ SYMBOL_LIMIT = 10000
 STRING_LIMIT = 10000
 CALL_EDGE_LIMIT = 10000
 GHIDRA_TIMEOUT = 240
+GHIDRA_ANALYSIS_TIMEOUT = 150
+GHIDRA_MAX_CPU = 2
+GHIDRA_TIMEOUT_RANGE = (60, 1800)
+LARGE_TARGET_BYTES = 8 * 1024 * 1024
+
+
+def normalize_options(options=None) -> dict:
+    """Validate per-run analysis options; unknown keys are rejected.
+
+    ``ghidra_timeout_seconds`` bounds the whole headless process,
+    ``ghidra_max_cpu`` is passed to ``-max-cpu`` and the per-file analysis
+    timeout is derived so Ghidra can still export before the hard stop.
+    """
+    if options is None:
+        options = {}
+    if not isinstance(options, dict):
+        raise ValueError("options must be a JSON object.")
+    # The derived per-file timeout is accepted (and recomputed) so normalized
+    # options can be passed through again.
+    allowed = {"ghidra_timeout_seconds", "ghidra_max_cpu", "allow_large_ghidra",
+               "ghidra_analysis_timeout_seconds"}
+    unknown = sorted(set(options) - allowed)
+    if unknown:
+        raise ValueError(f"Unknown analysis option: {unknown[0]}")
+    cpu_limit = max(1, os.cpu_count() or 1)
+    timeout = options.get("ghidra_timeout_seconds", GHIDRA_TIMEOUT)
+    cpu = options.get("ghidra_max_cpu", min(GHIDRA_MAX_CPU, cpu_limit))
+    low, high = GHIDRA_TIMEOUT_RANGE
+    if isinstance(timeout, bool) or not isinstance(timeout, int) or not low <= timeout <= high:
+        raise ValueError(f"Ghidra timeout must be a whole number of seconds between {low} and {high}.")
+    if isinstance(cpu, bool) or not isinstance(cpu, int) or not 1 <= cpu <= cpu_limit:
+        raise ValueError(f"Ghidra CPU limit must be between 1 and {cpu_limit} on this machine.")
+    allow_large = options.get("allow_large_ghidra", False)
+    if not isinstance(allow_large, bool):
+        raise ValueError("allow_large_ghidra must be true or false.")
+    return {"ghidra_timeout_seconds": timeout, "ghidra_max_cpu": cpu,
+            "ghidra_analysis_timeout_seconds": max(30, min(GHIDRA_ANALYSIS_TIMEOUT, timeout - 30)),
+            "allow_large_ghidra": allow_large}
 
 
 def _ghidra_environment(workdir=None):
@@ -214,28 +253,51 @@ def _ghidra_environment(workdir=None):
     return env
 
 
-def _analyze_ghidra(target, *, workdir, emit=None, cancel_event=None, info=None):
-    """Run bounded Ghidra headless import and export static artifacts as JSON."""
+def _analyze_ghidra(target, *, workdir, emit=None, cancel_event=None, info=None, options=None):
+    """Run bounded Ghidra headless import and export static artifacts as JSON.
+
+    The whole process tree is stopped on cancel or timeout and the temporary
+    project directory is removed in every case.
+    """
     import json
     import tempfile
+    settings = normalize_options(options)
     workdir = Path(workdir or tempfile.mkdtemp(prefix="engine-", dir=ROOT / "runs")).resolve()
     workdir.mkdir(parents=True, exist_ok=True, mode=0o700)
     project = workdir / "ghidra_project"
     project.mkdir(mode=0o700, exist_ok=True)
     output = workdir / "ghidra-export.json"
-    command = command_for(
-        info["path"], str(project), "ReverseShield", "-import", str(target),
-        "-scriptPath", str(ROOT / "ghidra_scripts"),
-        "-postScript", "ReverseShieldExport.java", str(output),
-        "-deleteProject", "-analysisTimeoutPerFile", "150", "-max-cpu", "2",
-        "-loader-loadLibraries", "false",
-        "-log", str(workdir / "ghidra.log"),
-        "-scriptlog", str(workdir / "ghidra-script.log"),
-    )
+    run_settings = {"timeout_seconds": settings["ghidra_timeout_seconds"],
+                    "analysis_timeout_per_file_seconds": settings["ghidra_analysis_timeout_seconds"],
+                    "max_cpu": settings["ghidra_max_cpu"]}
+    try:
+        command = command_for(
+            info["path"], str(project), "ReverseShield", "-import", str(target),
+            "-scriptPath", str(ROOT / "ghidra_scripts"),
+            "-postScript", "ReverseShieldExport.java", str(output),
+            "-deleteProject", "-analysisTimeoutPerFile", str(settings["ghidra_analysis_timeout_seconds"]),
+            "-max-cpu", str(settings["ghidra_max_cpu"]),
+            "-loader-loadLibraries", "false",
+            "-log", str(workdir / "ghidra.log"),
+            "-scriptlog", str(workdir / "ghidra-script.log"),
+        )
+    except ValueError as exc:
+        # Refused before launch (characters cmd.exe would interpret): keep the
+        # other tools' evidence and report Ghidra as a tool error with a reason.
+        shutil.rmtree(project, ignore_errors=True)
+        if emit:
+            emit({"type": "tool_end", "tool": "ghidra_headless", "message": str(exc), "status": "tool_error"})
+        record = {"tool": "ghidra_headless", "label": info["label"], "command": "(not started)",
+                  "status": "tool_error", "return_code": None, "output": str(exc), "truncated": False,
+                  "duration_seconds": 0.0, "version": info.get("version"),
+                  "timeout_seconds": settings["ghidra_timeout_seconds"], "settings": run_settings,
+                  "cleanup": {"project_removed": True, "process_tree_terminated": False}}
+        return record, {}, {}, []
     record = _run("ghidra_headless", command, label=info["label"], version=info["version"],
-                  emit=emit, cancel_event=cancel_event, timeout=GHIDRA_TIMEOUT,
+                  emit=emit, cancel_event=cancel_event, timeout=settings["ghidra_timeout_seconds"],
                   env=_ghidra_environment(workdir), cwd=str(workdir))
-    record["timeout_seconds"] = GHIDRA_TIMEOUT
+    record["timeout_seconds"] = settings["ghidra_timeout_seconds"]
+    record["settings"] = run_settings
     record["work_directory"] = str(workdir)
     payload, coverage, limitations = {}, {}, []
     try:
@@ -245,11 +307,23 @@ def _analyze_ghidra(target, *, workdir, emit=None, cancel_event=None, info=None)
         coverage = payload.get("coverage") or {}
         limitations = payload.get("limitations") or []
     except (OSError, ValueError) as exc:
-        record["status"] = "tool_error" if record["status"] == "ok" else record["status"]
-        record["output"] = (record.get("output", "") + f"\n[ReverseShield] Could not read Ghidra export: {exc}").strip()
+        if record["status"] == "ok":
+            record["status"] = "tool_error"
+        if record["status"] not in {"cancelled", "timeout"}:
+            record["output"] = (record.get("output", "") + f"\n[ReverseShield] Could not read Ghidra export: {exc}").strip()
     finally:
         # -deleteProject removes the database; drop the empty scaffolding too.
+        # A cancelled or timed-out run never reaches -deleteProject, so this
+        # also removes the partially written project.
         shutil.rmtree(project, ignore_errors=True)
+        profile = workdir / "ghidra-user-profile"
+        if record["status"] in {"cancelled", "timeout"}:
+            shutil.rmtree(profile, ignore_errors=True)
+            if record["status"] == "timeout":
+                record["output"] = (record.get("output", "") + f"\n[ReverseShield] Ghidra stopped at the "
+                                    f"{settings['ghidra_timeout_seconds']} s time limit; its process tree was terminated.").strip()
+        record["cleanup"] = {"project_removed": not project.exists(),
+                             "process_tree_terminated": record["status"] in {"cancelled", "timeout"}}
     return record, payload, coverage, limitations
 
 
@@ -328,7 +402,11 @@ def _merge(existing, incoming, limit, fields=("name", "address")):
     return list(indexed.values())
 
 
-def analyze(path, *, tools=None, emit=None, workdir=None, cancel_event=None) -> dict:
+def _symbol_count(value):
+    return len(value) if isinstance(value, list) else None
+
+
+def analyze(path, *, tools=None, emit=None, workdir=None, cancel_event=None, options=None) -> dict:
     """Inspect a single ELF or PE snapshot with static tools.
 
     The selected file is data only. No target is launched, mapped, emulated or
@@ -360,6 +438,9 @@ def analyze(path, *, tools=None, emit=None, workdir=None, cancel_event=None) -> 
         if not available[name]["available"]:
             raise ValueError(f"Static tool is unavailable: {name}")
     selected = list(dict.fromkeys(selected))
+    settings = normalize_options(options)
+    tool_counts = {"readelf_symbols": None, "nm_symbols": None, "ghidra_symbols": None}
+    ghidra_summary = None
     if file_format == "PE":
         pe_sections = pe_header.get("sections", [])
         metadata = {k: v for k, v in pe_header.items() if k != "sections"}
@@ -399,8 +480,24 @@ def analyze(path, *, tools=None, emit=None, workdir=None, cancel_event=None) -> 
             continue
         if name == "ghidra_headless":
             record, payload, coverage, limitations = _analyze_ghidra(
-                target, workdir=workdir, emit=emit, cancel_event=cancel_event, info=info)
+                target, workdir=workdir, emit=emit, cancel_event=cancel_event, info=info, options=settings)
             result["tools"].append(record)
+            functions_payload = payload.get("functions") if payload else None
+            ghidra_summary = {
+                "status": record["status"],
+                "duration_seconds": record["duration_seconds"],
+                "timeout_seconds": record["timeout_seconds"],
+                "max_cpu": record["settings"]["max_cpu"],
+                "functions_total": coverage.get("functions_total") if payload else None,
+                "functions_exported": _symbol_count(functions_payload),
+                "functions_decompiled": (sum(1 for f in functions_payload if isinstance(f, dict) and f.get("decompile_status") == "ok")
+                                         if isinstance(functions_payload, list) else None),
+                "call_edges": _symbol_count(payload.get("call_edges")) if payload else None,
+                "symbols": _symbol_count(payload.get("symbols")) if payload else None,
+                "strings": _symbol_count(payload.get("strings")) if payload else None,
+                "analysis_timed_out": coverage.get("analysis_timed_out") if payload else None,
+            }
+            tool_counts["ghidra_symbols"] = ghidra_summary["symbols"]
             if payload:
                 artifact = result["artifacts"]
                 artifact["functions"] = _merge(artifact["functions"], payload.get("functions") or [], FUNCTION_LIMIT)
@@ -421,6 +518,7 @@ def analyze(path, *, tools=None, emit=None, workdir=None, cancel_event=None) -> 
             result["metadata"].update(parse_elf_header(record["output"]))
             result["sections"] = parse_sections(record["output"])
             symbols = parse_readelf_symbols(record["output"])
+            tool_counts["readelf_symbols"] = len(symbols) if record["status"] == "ok" else None
             artifact["symbols"] = _merge(artifact["symbols"], symbols, SYMBOL_LIMIT)
             artifact["functions"] = _merge(artifact["functions"], [
                 {"name": s["name"], "address": s["address"], "size": s["size"]}
@@ -431,6 +529,7 @@ def analyze(path, *, tools=None, emit=None, workdir=None, cancel_event=None) -> 
             artifact["strings"] = list(dict.fromkeys(record["output"].splitlines()))[:STRING_LIMIT]
         elif name == "nm":
             symbols = parse_nm_symbols(record["output"])
+            tool_counts["nm_symbols"] = len(symbols) if record["status"] == "ok" else None
             artifact["symbols"] = _merge(artifact["symbols"], symbols, SYMBOL_LIMIT)
             artifact["functions"] = _merge(artifact["functions"], [
                 {"name": s["name"], "address": s["address"], "size": s["size"]}
@@ -445,6 +544,44 @@ def analyze(path, *, tools=None, emit=None, workdir=None, cancel_event=None) -> 
     names = [s["name"] for s in result["sections"]]
     result["metadata"].update({"sections_count": len(names), "section_names": names,
                                "symbol_entries": len(result["artifacts"]["symbols"]),
-                               "debug_info_present": any(n.startswith((".debug_", ".zdebug_")) for n in names),
-                               "symbol_table_present": ".symtab" in names})
+                               "debug_info_present": any(n.lower().startswith((".debug", ".zdebug_")) for n in names),
+                               "symbol_table_present": ".symtab" in names if file_format == "ELF"
+                               else result["metadata"].get("symbol_table_present", False)})
+    # Content metrics come from file bytes only; tool-derived counts stay
+    # separate so ELF/PE symbol tables are never merged with Ghidra labels.
+    content = content_metrics(target)
+    content["symbols"].update({**tool_counts, "merged_symbol_entries": len(result["artifacts"]["symbols"])})
+    content["ghidra"] = ghidra_summary
+    result["content_metrics"] = content
+    result["coverage"].update(_coverage_summary(result["tools"], available, selected))
+    if emit:
+        emit({"type": "artifact", "tool": "metrics", "message": "Computed content metrics from file bytes",
+              "counts": {"sections": content["sections"]["count"], "imports": content["imports"]["count"],
+                         "exports": content["exports"]["count"], "strings": content["strings"]["total"]}})
     return result
+
+
+def _coverage_summary(records, available, selected) -> dict:
+    """Which tools ran, were skipped, failed or truncated — with reasons."""
+    ran, skipped, failed, truncated = [], [], [], []
+    for record in records:
+        name = record.get("tool")
+        status = record.get("status")
+        if status == "skipped":
+            skipped.append({"tool": name, "reason": record.get("output") or "Not applicable to this format."})
+            continue
+        ran.append(name)
+        if status != "ok":
+            reason = {"timeout": f"stopped at the {record.get('timeout_seconds')} s time limit",
+                      "cancelled": "cancelled by the user"}.get(status, f"exit {record.get('return_code')}")
+            failed.append({"tool": name, "status": status, "reason": reason})
+        if record.get("truncated"):
+            truncated.append({"tool": name, "output_bytes": record.get("output_bytes"),
+                              "limit_bytes": record.get("output_limit_bytes")})
+    unavailable = [{"tool": name, "reason": "Not installed or not found on PATH / tools folder."}
+                   for name, info in sorted(available.items()) if not info.get("available")]
+    not_selected = [name for name, info in sorted(available.items())
+                    if info.get("available") and name not in selected]
+    return {"tools_ran": ran, "tools_skipped": skipped, "tools_failed": failed,
+            "tools_unavailable": unavailable, "tools_not_selected": not_selected,
+            "outputs_truncated": truncated}

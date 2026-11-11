@@ -1,0 +1,172 @@
+{
+  "os": "Windows 11",
+  "machine": "AMD64",
+  "logical_cpus": 16,
+  "python": "3.12.14",
+  "runs": [
+    {
+      "target": "Level 5 ELF",
+      "input_bytes": 16088,
+      "ghidra": false,
+      "wall_seconds": 0.417,
+      "report_bytes": 41927,
+      "tools": [
+        {
+          "tool": "readelf",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 9758,
+          "duration_seconds": 0.063
+        },
+        {
+          "tool": "objdump",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 4834,
+          "duration_seconds": 0.062
+        },
+        {
+          "tool": "strings",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 2383,
+          "duration_seconds": 0.047
+        },
+        {
+          "tool": "nm",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 772,
+          "duration_seconds": 0.062
+        }
+      ]
+    },
+    {
+      "target": "Level 5 ELF",
+      "input_bytes": 16088,
+      "ghidra": true,
+      "wall_seconds": 22.017,
+      "report_bytes": 76515,
+      "tools": [
+        {
+          "tool": "readelf",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 9758,
+          "duration_seconds": 0.063
+        },
+        {
+          "tool": "objdump",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 4834,
+          "duration_seconds": 0.047
+        },
+        {
+          "tool": "strings",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 2383,
+          "duration_seconds": 0.062
+        },
+        {
+          "tool": "nm",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 772,
+          "duration_seconds": 0.047
+        },
+        {
+          "tool": "ghidra_headless",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 14006,
+          "duration_seconds": 21.578
+        }
+      ]
+    },
+    {
+      "target": "PE fixture",
+      "input_bytes": 1024,
+      "ghidra": false,
+      "wall_seconds": 0.503,
+      "report_bytes": 7941,
+      "tools": [
+        {
+          "tool": "readelf",
+          "status": "skipped",
+          "truncated": false,
+          "output_bytes": null,
+          "duration_seconds": 0.0
+        },
+        {
+          "tool": "objdump",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 2642,
+          "duration_seconds": 0.063
+        },
+        {
+          "tool": "strings",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 7,
+          "duration_seconds": 0.062
+        },
+        {
+          "tool": "nm",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 188,
+          "duration_seconds": 0.063
+        }
+      ]
+    },
+    {
+      "target": "PE fixture",
+      "input_bytes": 1024,
+      "ghidra": true,
+      "wall_seconds": 24.49,
+      "report_bytes": 24801,
+      "tools": [
+        {
+          "tool": "readelf",
+          "status": "skipped",
+          "truncated": false,
+          "output_bytes": null,
+          "duration_seconds": 0.0
+        },
+        {
+          "tool": "objdump",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 2642,
+          "duration_seconds": 0.062
+        },
+        {
+          "tool": "strings",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 7,
+          "duration_seconds": 0.063
+        },
+        {
+          "tool": "nm",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 188,
+          "duration_seconds": 0.047
+        },
+        {
+          "tool": "ghidra_headless",
+          "status": "ok",
+          "truncated": false,
+          "output_bytes": 12333,
+          "duration_seconds": 23.984
+        }
+      ]
+    }
+  ],
+  "large_linux_target": "Not available on this Windows host; Faisal must measure on Fedora.",
+  "method": "Single run per cell; elapsed includes static adapters and parsing, not setup downloads. Targets never executed."
+}

@@ -65,9 +65,17 @@ class PeSupportTests(unittest.TestCase):
         payload = bytearray(PE.read_bytes())
         pe_offset = struct.unpack_from("<I", payload, 0x3C)[0]
         struct.pack_into("<H", payload, pe_offset + 6, 0xFFFF)
-        header = self._parse_temp_payload(payload)
-        self.assertGreater(header["sections_count"], 1)
-        self.assertLessEqual(header["sections_count"], 96)
+        with self.assertRaisesRegex(ValueError, "section count"):
+            self._parse_temp_payload(payload)
+
+    def test_section_table_and_data_must_fit_file(self):
+        payload = PE.read_bytes()
+        pe_offset = struct.unpack_from("<I", payload, 0x3C)[0]
+        optional_size = struct.unpack_from("<H", payload, pe_offset + 20)[0]
+        with self.assertRaisesRegex(ValueError, "section table"):
+            self._parse_temp_payload(payload[:pe_offset + 24 + optional_size + 5])
+        with self.assertRaisesRegex(ValueError, "section data"):
+            self._parse_temp_payload(payload[:-1])
 
     def test_missing_objdump_is_reported_as_unavailable(self):
         with mock.patch.object(engine, "which_tool", return_value=None):

@@ -33,6 +33,16 @@ def _now():
     return datetime.now(timezone.utc).isoformat()
 
 
+def _target_size(target):
+    size = target.get('size_bytes')
+    if isinstance(size, int):
+        return size
+    try:
+        return Path(target['absolute_path']).stat().st_size
+    except (OSError, KeyError):
+        return 0
+
+
 def _identity(path):
     info = Path(path).stat()
     if not stat.S_ISREG(info.st_mode):
@@ -69,7 +79,11 @@ def _snapshot(source, destination, expected):
 class Workbench:
     def __init__(self, root, *, runs_root=None, analyzer=None, inventory_provider=None):
         self.root = Path(root).resolve()
-        self.runs_root = Path(runs_root or self.root / 'runs').resolve()
+        candidate = Path(runs_root or self.root / 'runs').absolute()
+        from discovery import _is_link_like
+        if any(_is_link_like(item) for item in (candidate, *candidate.parents) if item.exists() or item.is_symlink()):
+            raise ValueError('Linked run storage is not supported.')
+        self.runs_root = candidate.resolve()
         self.runs_root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.analyzer = analyzer
         self.inventory_provider = inventory_provider
@@ -103,7 +117,7 @@ class Workbench:
             item.pop('_identity', None)
         return public
 
-    def start_job(self, selection_id, target_ids, tools, operation, *, authorized=False, profile=None):
+    def start_job(self, selection_id, target_ids, tools, operation, *, authorized=False, profile=None, options=None):
         if authorized is not True:
             raise ValueError('Confirm that the input is benign and you are authorized to analyze it.')
         if operation not in {'analyze', 'strip_compare', 'protect_compare', 'binary_compare'}:
@@ -123,6 +137,8 @@ class Workbench:
         inventory = self.inventory()
         if any(t not in inventory or not inventory[t]['available'] for t in tools):
             raise ValueError('An unknown or unavailable analysis tool was selected.')
+        from engine import LARGE_TARGET_BYTES, normalize_options
+        options = normalize_options(options)
         with self.lock:
             selection = self.selections.get(selection_id)
             if selection is None:
@@ -131,6 +147,12 @@ class Workbench:
             targets = [t for t in selection['targets'] if t['target_id'] in requested]
             if len(targets) != len(requested) or any(not t.get('analyzable', False) for t in targets):
                 raise ValueError('One or more selected targets are unavailable or too large.')
+            if 'ghidra_headless' in tools and not options['allow_large_ghidra']:
+                large = [t for t in targets if _target_size(t) > LARGE_TARGET_BYTES]
+                if large:
+                    biggest = max(_target_size(t) for t in large) / (1024 * 1024)
+                    raise ValueError(f'Large target ({biggest:.1f} MiB): Ghidra may take several minutes. '
+                                     'Press "Skip Ghidra" or tick "Run Ghidra anyway".')
             if operation == 'strip_compare':
                 sample = get_sample(selection.get('sample_id'))
                 if sample is None or len(targets) != 1 or Path(targets[0]['absolute_path']).resolve() != (self.root / sample['binary']).resolve():
@@ -153,11 +175,12 @@ class Workbench:
             directory.mkdir(mode=0o700)
             job = {'job_id': job_id, 'status': 'queued', 'operation': operation,
                    'profile': profile, 'sample_id': selection.get('sample_id'),
+                   'options': options if 'ghidra_headless' in tools else None,
                    'label': selection['app'].get('name', 'Selected application'),
                    'events': [], 'next_seq': 0, 'result': None, 'error': None,
                    '_directory': directory, '_cancel': threading.Event()}
             self.jobs[job_id] = job
-            self._emit(job, {'type': 'queued', 'message': 'Queued for local static analysis.'})
+            self._emit(job, {'type': 'queued', 'message': 'Waiting to start. Files will be read, never run.'})
             job['_future'] = self.pool.submit(self._run, job, targets, list(dict.fromkeys(tools)))
             return job_id
 
@@ -184,8 +207,9 @@ class Workbench:
         workdir.mkdir(mode=0o700)
         def emit(event):
             self._emit(job, {**event, 'phase': phase, 'target': label})
-        emit({'type': 'phase', 'message': f'{phase}: static inspection; target will not be executed.'})
-        result = analyzer(path, tools=tools, emit=emit, workdir=workdir, cancel_event=job['_cancel'])
+        emit({'type': 'phase', 'message': f'Reading the {"original" if phase == "before" else "changed copy" if phase == "after" else "file"} with the analysis tools (it is never run).'})
+        extra = {'options': job['options']} if job.get('options') else {}
+        result = analyzer(path, tools=tools, emit=emit, workdir=workdir, cancel_event=job['_cancel'], **extra)
         result['filename'] = label
         result['sha256'] = hashlib.sha256(path.read_bytes()).hexdigest()
         return result
@@ -199,7 +223,7 @@ class Workbench:
                 if job['_cancel'].is_set():
                     raise InterruptedError('Cancelled by user.')
                 snapshot = job['_directory'] / f'original-{index}.elf'
-                self._emit(job, {'type': 'phase', 'message': 'Copying selected ELF to a run-local snapshot.', 'target': target['relative_path']})
+                self._emit(job, {'type': 'phase', 'message': 'Making a private copy of the file for analysis.', 'target': target['relative_path']})
                 _snapshot(target['absolute_path'], snapshot, target['_identity'])
                 result = self._analyze(job, snapshot, tools, 'before' if job['operation'] != 'analyze' else 'analysis', target['relative_path'])
                 reports.append({'target_id': target['target_id'], 'label': target['relative_path'], 'analysis': result})
@@ -283,7 +307,7 @@ class Workbench:
                 built = build_protected(job['sample_id'], job['_directory'] / 'protected')
                 protected = Path(built['path'])
                 self._emit(job, {'type': 'tool_end', 'tool': 'demo_transformer', 'phase': 'transform',
-                                 'message': f"Protected build created ({built['sha256'][:16]}…); sample sources were compiled but not executed."})
+                                 'message': f"Demo-transformed build created ({built['sha256'][:16]}…); sample sources were compiled but not executed."})
                 job['result'] = {
                     'operation': 'protect_compare', 'before': before, 'after': None,
                     'protection': {'state': 'demo_obfuscation_applied', 'tool': 'ReverseShield demo transformer',
@@ -317,7 +341,7 @@ class Workbench:
         except Exception as exc:
             job['status'], job['error'] = 'failed', str(exc)
         finally:
-            self._emit(job, {'type': job['status'], 'message': job['error'] or f"Run {job['status']} — no target execution."})
+            self._emit(job, {'type': job['status'], 'message': job['error'] or f"Finished: {job['status']}. No program was executed."})
             record = {k: v for k, v in job.items() if not k.startswith('_')}
             report = job['_directory'] / 'report.json'
             report.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -336,27 +360,34 @@ class Workbench:
         with self.lock:
             return [{k: j[k] for k in ('job_id', 'status', 'operation', 'label')} for j in reversed(list(self.jobs.values()))]
 
+    def safe_run_file(self, path):
+        from discovery import _is_link_like
+        path = Path(path)
+        if not path.resolve().is_relative_to(self.runs_root) or any(_is_link_like(item) for item in (path, *path.parents) if item.exists() or item.is_symlink()):
+            raise ValueError('Unsafe run storage path.')
+        return path
+
     def report_path(self, job_id):
         self.get_job(job_id)
-        return self.jobs[job_id]['_directory'] / 'report.json'
+        return self.safe_run_file(self.jobs[job_id]['_directory'] / 'report.json')
 
     def artifact_path(self, job_id):
         record = self.get_job(job_id)
         if record['operation'] not in {'strip_compare', 'protect_compare', 'binary_compare'} or not record.get('result') or record['status'] not in {'completed', 'partial'}:
             raise ValueError('No completed protection artifact is available.')
         if record['operation'] == 'strip_compare':
-            return self.jobs[job_id]['_directory'] / 'symbols-removed.elf'
+            return self.safe_run_file(self.jobs[job_id]['_directory'] / 'symbols-removed.elf')
         if record['operation'] == 'binary_compare':
             directory = self.jobs[job_id]['_directory'] / 'binary-hygiene'
             for name in ('binary-hygiene.elf', 'binary-hygiene.exe'):
                 candidate = directory / name
                 if candidate.is_file():
-                    return candidate
+                    return self.safe_run_file(candidate)
             raise ValueError('Binary hygiene artifact is not available.')
         protected = sorted((self.jobs[job_id]['_directory'] / 'protected').glob('*-protected.*'))
         if not protected:
             raise ValueError('Protected artifact is not available.')
-        return protected[0]
+        return self.safe_run_file(protected[0])
 
     def wait(self, job_id, timeout=None):
         self.jobs[job_id]['_future'].result(timeout=timeout)
@@ -377,6 +408,75 @@ class Workbench:
         self.pool.shutdown(wait=True)
 
 
+MATCH_LIST_LIMIT = 500
+
+
+def _address(value):
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value, 16)
+        except ValueError:
+            return None
+    return None
+
+
+def match_functions(before_functions, after_functions):
+    """Pair functions by entry address first, then by exact name.
+
+    Unmatched functions are reported on both sides instead of being dropped.
+    A match means the same address or name was observed; it does not prove
+    the two functions contain the same code or behave the same way.
+    """
+    def label(fn):
+        return f"{fn.get('name') or 'unnamed'} @ {fn.get('address') or 'address not collected'}"
+
+    remaining_after = list(range(len(after_functions)))
+    by_address = {}
+    for index in remaining_after:
+        address = _address(after_functions[index].get('address'))
+        if address is not None:
+            by_address.setdefault(address, index)
+    used = set()
+    pairs = []
+    unmatched_before = []
+    for fn in before_functions:
+        address = _address(fn.get('address'))
+        index = by_address.get(address) if address is not None else None
+        if index is not None and index not in used:
+            used.add(index)
+            pairs.append(('address', fn, after_functions[index]))
+        else:
+            unmatched_before.append(fn)
+    by_name = {}
+    for index in remaining_after:
+        name = after_functions[index].get('name')
+        if index not in used and name:
+            by_name.setdefault(name, index)
+    still_unmatched = []
+    for fn in unmatched_before:
+        index = by_name.get(fn.get('name')) if fn.get('name') else None
+        if index is not None and index not in used:
+            used.add(index)
+            pairs.append(('name', fn, after_functions[index]))
+        else:
+            still_unmatched.append(fn)
+    unmatched_after = [after_functions[i] for i in remaining_after if i not in used]
+    before_labels = sorted(label(fn) for fn in still_unmatched)
+    after_labels = sorted(label(fn) for fn in unmatched_after)
+    renamed = sorted(f"{a.get('name')} → {b.get('name')} @ {a.get('address')}"
+                     for how, a, b in pairs if how == 'address' and a.get('name') != b.get('name'))
+    return {'available': True,
+            'matched_by_address': sum(1 for how, _, _ in pairs if how == 'address'),
+            'matched_by_name': sum(1 for how, _, _ in pairs if how == 'name'),
+            'renamed_at_same_address': renamed[:MATCH_LIST_LIMIT],
+            'unmatched_before': before_labels[:MATCH_LIST_LIMIT],
+            'unmatched_after': after_labels[:MATCH_LIST_LIMIT],
+            'unmatched_before_count': len(before_labels), 'unmatched_after_count': len(after_labels),
+            'truncated': max(len(before_labels), len(after_labels), len(renamed)) > MATCH_LIST_LIMIT}
+
+
 def compare_reports(before: dict, after: dict) -> dict:
     providers = {'functions': {'readelf', 'nm', 'objdump', 'ghidra_headless'},
                  'symbols': {'readelf', 'nm', 'ghidra_headless'},
@@ -391,6 +491,25 @@ def compare_reports(before: dict, after: dict) -> dict:
         value = report.get('artifacts', {}).get(key)
         return len(value) if collected(report, key) and isinstance(value, list) else None
 
+    def content(report, *keys):
+        value = report.get('content_metrics')
+        for key in keys:
+            if not isinstance(value, dict):
+                return None
+            value = value.get(key)
+        return value
+
+    def flag(report, key):
+        value = content(report, 'debug', key)
+        return None if value is None else ('present' if value else 'absent')
+
+    def table_symbols(report):
+        symbols = content(report, 'symbols') or {}
+        for key in ('elf_symbols', 'pe_coff_symbols'):
+            if key in symbols:
+                return 0 if symbols[key] is None and content(report, 'format') == 'ELF' else symbols[key]
+        return None
+
     pairs = [
         ('File size (bytes)', before.get('size_bytes'), after.get('size_bytes')),
         ('Parsed symbol entries', before.get('metadata', {}).get('symbol_entries'), after.get('metadata', {}).get('symbol_entries')),
@@ -398,10 +517,48 @@ def compare_reports(before: dict, after: dict) -> dict:
         ('Exported functions', count(before, 'functions'), count(after, 'functions')),
         ('Extracted strings', count(before, 'strings'), count(after, 'strings')),
         ('Exported call edges', count(before, 'call_edges'), count(after, 'call_edges')),
+        ('Executable sections', content(before, 'sections', 'executable'), content(after, 'sections', 'executable')),
+        ('Writable sections', content(before, 'sections', 'writable'), content(after, 'sections', 'writable')),
+        ('File entropy (bits/byte)', content(before, 'file_entropy'), content(after, 'file_entropy')),
+        ('Imported functions', content(before, 'imports', 'count'), content(after, 'imports', 'count')),
+        ('Imported libraries', content(before, 'imports', 'libraries'), content(after, 'imports', 'libraries')),
+        ('Export-table entries', content(before, 'exports', 'count'), content(after, 'exports', 'count')),
+        ('ELF/PE symbol-table entries', table_symbols(before), table_symbols(after)),
+        ('Ghidra symbols', content(before, 'symbols', 'ghidra_symbols'), content(after, 'symbols', 'ghidra_symbols')),
+        ('Ghidra functions decompiled', content(before, 'ghidra', 'functions_decompiled'), content(after, 'ghidra', 'functions_decompiled')),
+        ('Strings (byte scan)', content(before, 'strings', 'total'), content(after, 'strings', 'total')),
     ]
-    metrics = [{'name': name, 'before': a, 'after': b,
-                'delta': b - a if isinstance(a, (int, float)) and isinstance(b, (int, float)) else None}
-               for name, a, b in pairs]
+    for category, label in (('paths', 'file/folder names'), ('urls', 'URLs'), ('compiler_notes', 'compiler notes'), ('messages', 'messages')):
+        pairs.append((f'Strings · {label}', content(before, 'strings', 'categories', category),
+                      content(after, 'strings', 'categories', category)))
+    pairs.append(('Strings · paths in a user home folder', content(before, 'strings', 'paths_in_user_home'),
+                  content(after, 'strings', 'paths_in_user_home')))
+    for key, label in (('debug_sections_present', 'Debug sections'), ('symbol_table_present', 'Symbol table'),
+                       ('build_id_present', 'Build-ID note'), ('compiler_comment_present', 'Compiler comment'),
+                       ('pdb_reference_present', 'PDB reference')):
+        pairs.append((label, flag(before, key), flag(after, key)))
+
+    def numeric(value):
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+    metrics = []
+    summary = {'changed': [], 'unchanged': [], 'not_collected': []}
+    for name, a, b in pairs:
+        delta = None
+        if numeric(a) and numeric(b):
+            delta = round(b - a, 4) if isinstance(a, float) or isinstance(b, float) else b - a
+        metrics.append({'name': name, 'before': a, 'after': b, 'delta': delta})
+        if a is None or b is None:
+            # Missing data is N/A, never zero; only report it if one side had it.
+            if (a, b) != (None, None) or name in {'Exported functions', 'Extracted strings', 'Exported call edges'}:
+                summary['not_collected'].append(name)
+        elif a != b:
+            summary['changed'].append(f'{name}: {a} → {b}')
+        else:
+            summary['unchanged'].append(f'{name}: {a}')
+    # Flags that are absent on both sides of a format they do not apply to are noise.
+    metrics = [m for m in metrics if not (m['before'] is None and m['after'] is None and m['name'] in
+                                          {'PDB reference', 'Build-ID note', 'Ghidra symbols', 'Ghidra functions decompiled'})]
 
     def differences(key):
         def names(report):
@@ -414,9 +571,18 @@ def compare_reports(before: dict, after: dict) -> dict:
             return {'available': False, 'added': [], 'removed': [], 'reason': 'Not collected on both sides.'}
         return {'available': True, 'added': sorted(b - a), 'removed': sorted(a - b)}
 
-    return {'metrics': metrics, 'strings': differences('strings'), 'symbols': differences('symbols'),
+    if collected(before, 'functions') and collected(after, 'functions'):
+        functions = match_functions(before.get('artifacts', {}).get('functions') or [],
+                                    after.get('artifacts', {}).get('functions') or [])
+    else:
+        functions = {'available': False, 'reason': 'Functions were not collected on both sides.'}
+
+    return {'metrics': metrics, 'summary': summary, 'functions': functions,
+            'strings': differences('strings'), 'symbols': differences('symbols'),
             'limitations': [
                 'Observed artifact differences are not a resistance score.',
                 'Counts describe exported data and may be partial; inspect each report coverage and tool status.',
-                'Names and addresses may change; functions are not automatically claimed to match.',
+                'N/A means a metric was not collected on that side; it is never treated as zero.',
+                'Functions are paired by entry address first, then by exact name; a pair does not prove identical code.',
+                'Names and addresses may change; unmatched functions are listed rather than silently dropped.',
                 'Target behavior and functional equivalence were not tested.']}

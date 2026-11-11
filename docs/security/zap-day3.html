@@ -1,0 +1,194 @@
+<html lang="en"><meta charset="utf-8"><title>ReverseShield Day 3 ZAP</title><h1>Sanitized ZAP results</h1><p>Scoped spider plus passive scan, including authenticated API requests; no active scan.</p><pre>{
+  &quot;scanner&quot;: &quot;ZAP 2.17.0&quot;,
+  &quot;scope&quot;: &quot;temporary 127.0.0.1 workbench only&quot;,
+  &quot;method&quot;: &quot;Scoped spider plus passive scan, including authenticated API requests; no active scan.&quot;,
+  &quot;checks&quot;: [
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/&quot;,
+      &quot;expected&quot;: 200,
+      &quot;status&quot;: 200,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/static/workbench.js&quot;,
+      &quot;expected&quot;: 200,
+      &quot;status&quot;: 200,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/static/workbench.css&quot;,
+      &quot;expected&quot;: 200,
+      &quot;status&quot;: 200,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/api/status&quot;,
+      &quot;expected&quot;: 200,
+      &quot;status&quot;: 200,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/api/samples&quot;,
+      &quot;expected&quot;: 200,
+      &quot;status&quot;: 200,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/api/apps&quot;,
+      &quot;expected&quot;: 200,
+      &quot;status&quot;: 200,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/api/jobs&quot;,
+      &quot;expected&quot;: 200,
+      &quot;status&quot;: 200,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/api/status&quot;,
+      &quot;expected&quot;: 403,
+      &quot;status&quot;: 403,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/api/jobs&quot;,
+      &quot;expected&quot;: 403,
+      &quot;status&quot;: 403,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;POST&quot;,
+      &quot;route&quot;: &quot;/api/discover&quot;,
+      &quot;expected&quot;: 403,
+      &quot;status&quot;: 403,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;POST&quot;,
+      &quot;route&quot;: &quot;/api/analyze/upload&quot;,
+      &quot;expected&quot;: 403,
+      &quot;status&quot;: 403,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;DELETE&quot;,
+      &quot;route&quot;: &quot;/api/jobs&quot;,
+      &quot;expected&quot;: 403,
+      &quot;status&quot;: 403,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;POST&quot;,
+      &quot;route&quot;: &quot;/api/discover&quot;,
+      &quot;expected&quot;: 403,
+      &quot;status&quot;: 403,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;POST&quot;,
+      &quot;route&quot;: &quot;/api/jobs&quot;,
+      &quot;expected&quot;: 400,
+      &quot;status&quot;: 400,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;POST&quot;,
+      &quot;route&quot;: &quot;/api/ingest&quot;,
+      &quot;expected&quot;: 400,
+      &quot;status&quot;: 400,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/api/jobs/%2e%2e/report&quot;,
+      &quot;expected&quot;: 404,
+      &quot;status&quot;: 404,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;POST&quot;,
+      &quot;route&quot;: &quot;/api/discover&quot;,
+      &quot;expected&quot;: 200,
+      &quot;status&quot;: 200,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;POST&quot;,
+      &quot;route&quot;: &quot;/api/jobs&quot;,
+      &quot;expected&quot;: 202,
+      &quot;status&quot;: 202,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/api/jobs/211909b47a6dcda97799f873&quot;,
+      &quot;expected&quot;: 200,
+      &quot;status&quot;: 200,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;GET&quot;,
+      &quot;route&quot;: &quot;/api/jobs/211909b47a6dcda97799f873/report-sanitized&quot;,
+      &quot;expected&quot;: 200,
+      &quot;status&quot;: 200,
+      &quot;passed&quot;: true
+    },
+    {
+      &quot;method&quot;: &quot;POST&quot;,
+      &quot;route&quot;: &quot;/api/jobs/211909b47a6dcda97799f873/cancel&quot;,
+      &quot;expected&quot;: 200,
+      &quot;status&quot;: 200,
+      &quot;passed&quot;: true
+    }
+  ],
+  &quot;alerts&quot;: [
+    {
+      &quot;pluginId&quot;: &quot;10109&quot;,
+      &quot;alert&quot;: &quot;Modern Web Application&quot;,
+      &quot;risk&quot;: &quot;Informational&quot;,
+      &quot;confidence&quot;: &quot;Medium&quot;,
+      &quot;description&quot;: &quot;The application appears to be a modern web application. If you need to explore it automatically then the Client Spider may well be more effective than the standard one.&quot;,
+      &quot;solution&quot;: &quot;This is an informational alert and so no changes are required.&quot;,
+      &quot;cweid&quot;: &quot;-1&quot;
+    },
+    {
+      &quot;pluginId&quot;: &quot;10027&quot;,
+      &quot;alert&quot;: &quot;Information Disclosure - Suspicious Comments&quot;,
+      &quot;risk&quot;: &quot;Informational&quot;,
+      &quot;confidence&quot;: &quot;Medium&quot;,
+      &quot;description&quot;: &quot;The response appears to contain suspicious comments which may help an attacker.&quot;,
+      &quot;solution&quot;: &quot;Remove all comments that return information that may help an attacker and fix any underlying problems they refer to.&quot;,
+      &quot;cweid&quot;: &quot;615&quot;
+    },
+    {
+      &quot;pluginId&quot;: &quot;10027&quot;,
+      &quot;alert&quot;: &quot;Information Disclosure - Suspicious Comments&quot;,
+      &quot;risk&quot;: &quot;Informational&quot;,
+      &quot;confidence&quot;: &quot;Medium&quot;,
+      &quot;description&quot;: &quot;The response appears to contain suspicious comments which may help an attacker.&quot;,
+      &quot;solution&quot;: &quot;Remove all comments that return information that may help an attacker and fix any underlying problems they refer to.&quot;,
+      &quot;cweid&quot;: &quot;615&quot;
+    },
+    {
+      &quot;pluginId&quot;: &quot;10027&quot;,
+      &quot;alert&quot;: &quot;Information Disclosure - Suspicious Comments&quot;,
+      &quot;risk&quot;: &quot;Informational&quot;,
+      &quot;confidence&quot;: &quot;Medium&quot;,
+      &quot;description&quot;: &quot;The response appears to contain suspicious comments which may help an attacker.&quot;,
+      &quot;solution&quot;: &quot;Remove all comments that return information that may help an attacker and fix any underlying problems they refer to.&quot;,
+      &quot;cweid&quot;: &quot;615&quot;
+    }
+  ],
+  &quot;passive_queue_remaining&quot;: 0,
+  &quot;limitations&quot;: &quot;No browser automation or full active attack coverage; complement with API regression tests.&quot;
+}</pre></html>

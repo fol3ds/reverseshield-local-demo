@@ -78,7 +78,7 @@ class UpgradeApiTests(unittest.TestCase):
     def test_sample_selection_starts_real_static_job_and_can_be_read(self):
         status, state = self.request('GET', '/api/status')
         self.assertEqual(status, 200)
-        self.assertEqual(state.get('token'), self.server.api_token)
+        self.assertNotIn('token', state)
         status, selection = self.request('POST', '/api/discover', {'kind': 'sample', 'sample_id': 'level-1'})
         self.assertEqual(status, 200, selection)
         self.assertEqual(selection['sample_id'], 'level-1')

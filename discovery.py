@@ -54,6 +54,12 @@ def _command(args: list[str], runner: CommandRunner) -> CommandResult:
         raise RuntimeError(f"Required local tool is unavailable: {args[0]}") from exc
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError(f"{args[0]} timed out while reading local package metadata.") from exc
+    except OSError as exc:
+        # e.g. PermissionError when a non-executable "flatpak" is on PATH:
+        # report the tool as unavailable instead of failing the request.
+        raise RuntimeError(f"Required local tool cannot be started: {args[0]} ({exc.strerror or exc})") from exc
+    except subprocess.SubprocessError as exc:
+        raise RuntimeError(f"{args[0]} could not be run: {exc}") from exc
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
         raise RuntimeError(detail[:500] or f"{args[0]} returned exit code {result.returncode}.")
@@ -98,6 +104,24 @@ def find_elf_targets(root: str | Path, max_file_bytes: int = MAX_FILE_BYTES) -> 
     return targets
 
 
+def _is_link_like(path: Path) -> bool:
+    """True for symlinks, NTFS junctions and other reparse points (CWE-59).
+
+    ``Path.is_symlink`` is False for junctions, so a junction inside a chosen
+    folder could otherwise lead the scan to another part of the disk.
+    """
+    try:
+        if path.is_symlink():
+            return True
+        isjunction = getattr(os.path, "isjunction", None)
+        if isjunction is not None and isjunction(path):
+            return True
+        attributes = getattr(path.stat(follow_symlinks=False), "st_file_attributes", 0)
+        return bool(attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+    except OSError:
+        return True
+
+
 def _scan_directory_windows(root: str | Path, max_file_bytes: int = MAX_FILE_BYTES) -> tuple[list, dict]:
     """Portable directory walk for Windows (no dir_fd / O_DIRECTORY)."""
     base = Path(root).resolve(strict=True)
@@ -117,7 +141,7 @@ def _scan_directory_windows(root: str | Path, max_file_bytes: int = MAX_FILE_BYT
                 excluded += 1
                 continue
             candidate = Path(dirpath) / name
-            if candidate.is_symlink():
+            if _is_link_like(candidate):
                 excluded += 1
                 continue
             if (candidate / "pyvenv.cfg").is_file():
@@ -130,7 +154,7 @@ def _scan_directory_windows(root: str | Path, max_file_bytes: int = MAX_FILE_BYT
             if visited > MAX_SCAN_FILES:
                 raise ValueError(f"Directory scan exceeded the {MAX_SCAN_FILES:,}-entry safety limit.")
             candidate = Path(dirpath) / name
-            if name.startswith(".") or candidate.is_symlink():
+            if name.startswith(".") or _is_link_like(candidate):
                 excluded += 1
                 continue
             try:
