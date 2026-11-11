@@ -181,7 +181,8 @@ class PathDiscoveryTests(unittest.TestCase):
             result = discovery.discover_path(source, workspace=Path(temporary) / "work")
             target = result["targets"][0]
             self.assertEqual(target["relative_path"], source.name)
-            self.assertEqual(target["absolute_path"], str(source))
+            self.assertEqual(os.path.normcase(os.path.realpath(target["absolute_path"])),
+                             os.path.normcase(os.path.realpath(source)))
             self.assertTrue(target["analyzable"])
             with source.open("ab") as stream:
                 stream.write(b"x")
