@@ -7,6 +7,15 @@
  */
 #include "policy.h"
 
+#ifdef RS_OLLVM_STRINGS
+#include <string.h>
+/* OLLVM's string-encryption pass decrypts literals into a temporary buffer.
+ * Returning a pointer to that temporary would expose an empty string after
+ * the function returns, so the protected build copies the selected message
+ * into this static buffer. The public API and the text are unchanged. */
+static char protected_reason[128];
+#endif
+
 static int valid_role(enum access_role role) {
     return role == ROLE_VIEWER || role == ROLE_EDITOR || role == ROLE_OWNER;
 }
@@ -27,10 +36,18 @@ int policy_allows(const struct access_request *request) {
 }
 
 const char *policy_reason(const struct access_request *request) {
-    if (request == 0) return "missing request";
-    if (request->tenant_id == 0u) return "tenant is not set";
-    if (!valid_role(request->role)) return "unknown role";
-    if ((request->flags & 0x80000000u) != 0u) return "blocked by policy flag";
-    if (!policy_allows(request)) return "role is below the required level";
-    return "allowed by sample policy";
+    const char *reason;
+    if (request == 0) reason = "missing request";
+    else if (request->tenant_id == 0u) reason = "tenant is not set";
+    else if (!valid_role(request->role)) reason = "unknown role";
+    else if ((request->flags & 0x80000000u) != 0u) reason = "blocked by policy flag";
+    else if (!policy_allows(request)) reason = "role is below the required level";
+    else reason = "allowed by sample policy";
+#ifdef RS_OLLVM_STRINGS
+    strncpy(protected_reason, reason, sizeof protected_reason - 1u);
+    protected_reason[sizeof protected_reason - 1u] = '\0';
+    return protected_reason;
+#else
+    return reason;
+#endif
 }

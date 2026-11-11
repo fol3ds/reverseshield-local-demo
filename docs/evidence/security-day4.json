@@ -1,0 +1,55 @@
+{
+  "observed_at": "2026-11-11T21:05:52+03:00",
+  "scope": "Project source, tests and scripts; excludes tools/, runs/, backups/, .git/ and bundled binary fixtures.",
+  "bandit": {
+    "version": "__main__.py 1.9.4",
+    "lines_of_code": 8859,
+    "issues_total": 116,
+    "severity_counts": {
+      "LOW": 113,
+      "MEDIUM": 3
+    },
+    "rule_counts": {
+      "B404": 26,
+      "B603": 58,
+      "B607": 24,
+      "B105": 2,
+      "B405": 1,
+      "B314": 2,
+      "B101": 2,
+      "B108": 1
+    }
+  },
+  "detect_secrets": {
+    "version": "1.5.0",
+    "files_with_findings": {
+      "docs/evidence/hardening-level5.json": 2,
+      "docs/evidence/ollvm-five-qemu.json": 20,
+      "docs/security/detect-secrets-day3.json": 8,
+      "scripts/setup_ollvm.sh": 1,
+      "scripts/setup_windows.ps1": 2,
+      "tests/test_security_day3.py": 2
+    },
+    "disposition": "All findings are SHA-256 checksums in evidence/setup scripts or deliberate sanitizer-test fixtures; no live credential was found."
+  },
+  "medium_dispositions": [
+    {
+      "rule": "B314",
+      "file": "tests/test_day4_documents.py",
+      "reason": "Parses the project-generated DOCX in a test, not untrusted uploader XML."
+    },
+    {
+      "rule": "B108",
+      "file": "tests/test_security_day3.py",
+      "reason": "Literal /tmp path inside sanitizer test data; no file is created or read."
+    }
+  ],
+  "not_run": [
+    "Semgrep (not installed; no fresh scan)",
+    "OWASP ZAP (no fresh scan this pass; Day 3 evidence remains historical)"
+  ],
+  "limitations": [
+    "Static SAST of project code only; scanner findings are evidence, not proof of security.",
+    "The workbench parses potentially hostile binaries at runtime; parser isolation remains future work."
+  ]
+}

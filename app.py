@@ -2,7 +2,7 @@
 
 The server is loopback-only. It serves the workbench UI and a legacy metadata
 API; the upgraded JSON API lives in ``http_upgrade.py``. Static analysis tools
-read target bytes as data; the selected target is never executed.
+read target bytes as data; the selected target is never executed on the host. The optional OLLVM sample profile runs deterministic drivers only inside a QEMU micro-VM.
 
 Inputs are loopback HTTP requests and local files; outputs are static JSON or
 the browser UI. Uploaded bytes are bounded and never executed. Extend routes
@@ -212,7 +212,7 @@ def create_server() -> ThreadingHTTPServer:
 def main() -> None:
     server = create_server()
     host, port = server.server_address
-    print(f"ReverseShield Workbench v0.4.0-team listening on http://{host}:{port}", flush=True)
+    print(f"ReverseShield Workbench v0.5.0-team listening on http://{host}:{port}", flush=True)
     print("Static ELF/PE analysis only. The server does not execute selected binaries.")
     print("Press Ctrl+C to stop.")
     try:

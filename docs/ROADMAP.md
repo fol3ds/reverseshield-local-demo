@@ -1,12 +1,19 @@
 # ReverseShield — Roadmap
 
-Items here are **not built yet**. Do not demo or claim them as features.
-Status as of 10 November 2026 (Day 2). Slide 9 of the pitch deck draws on
-this file.
+Items here are **not fully built yet**. Do not demo or claim unbuilt parts as
+features. R1 now has a partial implementation (`hardening.py`); the advanced
+checks below remain planned. Status as of 11 November 2026 (Day 4).
 
 ## Next (after the event submission)
 
-### R1 — Hardening checks (exploit-mitigation flags)
+### R1 — Hardening checks (exploit-mitigation flags) — partially implemented
+
+Implemented: ELF NX/DEP, PIE/ASLR, RELRO, canary and FORTIFY; PE ASLR/DEP,
+Control Flow Guard and bounded security-cookie evidence. The report shows
+Present / Absent / Partial / Unknown / Not applicable, never a score.
+
+Still planned: CET/IBT, Authenticode, RPATH/RUNPATH, and before/after rows in
+the Compare view.
 
 Static checks, from the file bytes only, for whether standard exploit
 protections were enabled at build time. Each result names the weakness class
@@ -54,8 +61,12 @@ Estimate: 2–4 days, plus an update process for the database.
 
 - CI integration: run on every build and fail on chosen exposure thresholds.
 - More formats: Mach-O, APK, DEB.
-- Sanitized evidence packs (Day 3 starts this; see RS-09).
+- Sanitized evidence packs: Day 4 has a local allowlist-based builder and
+  draft summaries; actual PDF review, archive verification and publication
+  remain separate gates. Do not bundle raw `runs/` data.
 - Sandboxed adapters: separate user or container, memory limits (RS-06).
 - Token on every API read; token passed in the URL fragment (RS-05).
-- A validated protection profile, only with behaviour verification. Today
-  `behavior_verified` is always `false`.
+- A stronger protection profile with broader behaviour verification. The current
+  OLLVM workflow records `driver_vectors_matched` only for separate QEMU driver
+  builds; `behavior_verified` stays false for the downloadable protected ELF.
+  External targets remain analysis-only for source transformations.

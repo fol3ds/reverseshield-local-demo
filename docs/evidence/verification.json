@@ -1,0 +1,16 @@
+{
+  "observed_at": "2026-11-11T21:12:34+03:00",
+  "command": "RUN_GHIDRA_TESTS=1 python3 -m unittest discover -s tests -v",
+  "platform": "Linux 7.2.13-100.fc43.x86_64 x86_64",
+  "python": "3.14.7",
+  "tests": {
+    "count": 167,
+    "run": "Ghidra-enabled tests",
+    "skipped": 1,
+    "status": "passed",
+    "failures": 0,
+    "errors": 0
+  },
+  "log_sha256": "1d0a43ca675218bd40822f5c3225b87584b7c222f0becdff3f84d61a05317255",
+  "scope": "Automated project tests only. Ghidra integration is enabled; native-Windows manual acceptance was not run. Tests do not execute bundled samples or third-party targets on the host; the OLLVM suite boots separate deterministic drivers in a no-network QEMU guest."
+}

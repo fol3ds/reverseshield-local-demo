@@ -58,12 +58,15 @@ class LocalWorkbenchApiTests(unittest.TestCase):
         self.assertEqual(payload["mode"], "static_only")
         self.assertFalse(payload["dynamic_analysis"]["enabled"])
 
-    def test_sample_catalog_contains_five_separate_levels(self):
+    def test_sample_catalog_contains_six_separate_levels(self):
         status, body = self.request("GET", "/api/samples")
         payload = json.loads(body)
         self.assertEqual(status, 200)
-        self.assertEqual(len(payload["samples"]), 5)
-        self.assertEqual(len({item["id"] for item in payload["samples"]}), 5)
+        self.assertEqual(len(payload["samples"]), 6)
+        self.assertEqual(len({item["id"] for item in payload["samples"]}), 6)
+        hardened = next(item for item in payload["samples"] if item["id"] == "level-5-hardened")
+        self.assertFalse(hardened["source_transform_supported"])
+        self.assertTrue(hardened["available"])
 
     @patch("app.list_flatpak_apps", return_value=[{
         "app_id": "com.example.App",

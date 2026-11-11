@@ -24,19 +24,19 @@
   </div>
 </header>
 <main id="main" class="wrap">
-  <div class="topline"><span>Local workbench · <strong>static analysis only</strong></span><span id="versionText">Programs are read as data and never executed</span></div>
+  <div class="topline"><span>Local workbench · <strong>static analysis by default</strong></span><span id="versionText">Host targets are never executed</span></div>
   <div id="globalMessage" class="notice" role="alert" hidden></div>
 
   <section id="operate" class="page" aria-labelledby="operateTitle">
     <div class="page-head">
       <div><p class="eyebrow">Choose a file → pick targets → read the report</p><h1 id="operateTitle">Analyze a program</h1></div>
-      <p class="muted">ReverseShield reads the file with standard analysis tools and shows what they recovered. The program is never run, and there is no security score.</p>
+      <p class="muted">ReverseShield reads the file with standard analysis tools and shows what they recovered. The target is never run on the host; there is no security score.</p>
     </div>
     <div class="workbench-layout">
       <div class="main-col">
         <section class="panel demo-panel" aria-labelledby="demoTitle">
           <div class="panel-head"><h2 id="demoTitle">Quick start: one-click demo</h2><span class="micro">Bundled sample · Level 5</span></div>
-          <p>Analyzes <strong>Level 5 · Policy Engine</strong>, a small program written by the team, with every available tool, then opens the report. Nothing starts until you click. The sample is read as data and never executed.</p>
+          <p>Analyzes <strong>Level 5 · Policy Engine</strong>, a small program written by the team, with every available tool, then opens the report. Nothing starts until you click. The sample is read as data and is never executed on the host.</p>
           <div class="actions"><button type="button" id="runDemoBtn" class="btn primary" disabled>Run demo · Level 5</button><span id="demoState" class="inline-state" role="status" aria-live="polite">Ready when the local server and sample list have loaded.</span></div>
         </section>
 
@@ -87,8 +87,9 @@
             <div class="compare-controls">
               <h3>Optional: test a release-hygiene change</h3>
               <p class="field-help">Makes a changed <strong>copy</strong>, analyzes it again and shows before/after on the Compare page. The original file is never modified.</p>
+              <p class="field-help">OLLVM source transforms and QEMU verification require Linux and the project-local toolchain; they are unavailable on native Windows. The hardened sixth sample is analysis-only. The five original samples can be transformed on supported Linux hosts.</p>
               <div class="actions">
-                <label class="field" for="protectionProfile"><span>Change to apply to the copy</span><select id="protectionProfile"><option value="constant_blinding">Hide constants (demo, bundled samples only)</option><option value="symbol_removal">Remove symbol names (bundled samples only)</option><option value="binary_hygiene">Remove debug info and build metadata (any one file)</option></select></label>
+                <label class="field" for="protectionProfile"><span>Change to apply to the copy</span><select id="protectionProfile"><option value="constant_blinding">Hide constants (demo, bundled samples only)</option><option value="symbol_removal">Remove symbol names (bundled samples only)</option><option value="ollvm_source">OLLVM obfuscation (stronger, bundled samples only)</option><option value="binary_hygiene">Remove debug info and build metadata (any one file)</option></select></label>
                 <button type="button" id="stripCompareBtn" class="btn" disabled>Make copy &amp; compare</button>
               </div>
             </div>
@@ -119,7 +120,7 @@
         </section>
         <section class="panel boundary" aria-labelledby="safetyTitle">
           <h2 id="safetyTitle">Safety</h2>
-          <p><strong>Programs are never executed.</strong> Tools only read the file.</p>
+          <p><strong>Host targets are never executed.</strong> Tools only read the file. The optional OLLVM profile runs deterministic sample drivers inside a QEMU micro-VM with no disk and no network.</p>
           <p class="muted">Changes are made to copies only. Behaviour of a changed copy is not verified.</p>
           <button type="button" class="text-button" data-page="readme">How it works and limitations →</button>
         </section>
@@ -196,13 +197,13 @@
       </article>
       <article class="panel prose">
         <h2>What a comparison shows</h2>
-        <p>You can apply one change to a <strong>copy</strong> and analyze it again: hide constants (demo), remove symbol names, or remove debug info and build metadata. The Compare page lists what changed, what did not, and which functions still match.</p>
-        <p>None of these changes is real protection or a security certificate. Ghidra can usually still recover the program logic.</p>
+        <p>You can apply one change to a <strong>copy</strong> and analyze it again: hide constants (demo), remove symbol names, remove debug info and build metadata, or use OLLVM on the five self-authored sample sources on Linux. The sixth hardened fixture is analysis-only. The Compare page lists what changed, what did not, and which functions still match.</p>
+        <p>These changes are demonstration-grade, not a security certificate. Ghidra may still recover program logic. OLLVM's limited QEMU driver checks do not prove general behaviour equivalence.</p>
         <h2>Hard limits</h2>
         <ul>
-          <li>Programs are never executed. Dynamic analysis is disabled.</li>
+          <li>Host targets are never executed. The optional OLLVM sample behaviour check runs only inside a QEMU micro-VM with no disk and no network.</li>
           <li>This is not a malware sandbox. Only use files you own or are allowed to inspect.</li>
-          <li>The behaviour of a changed copy is not tested.</li>
+          <li>Changed downloadable copies are not behaviour-tested. OLLVM's QEMU comparison runs separate deterministic driver builds from five self-authored sources, not the downloadable protected ELF and not arbitrary target behaviour.</li>
           <li>Missing pseudocode or graphs means “not collected”, not “secure”.</li>
           <li>Long tables and graphs are shortened on screen; the downloaded JSON report has everything collected.</li>
           <li>The page uses only local files: no web fonts, cloud services or tracking.</li>
@@ -211,7 +212,7 @@
     </div>
   </section>
 </main>
-<footer>ReverseShield <span>·</span> local static-analysis workbench <span>·</span> programs are never executed <span>·</span> no security score</footer>
+<footer>ReverseShield <span>·</span> local static-analysis workbench <span>·</span> host targets never executed <span>·</span> no security score</footer>
 <noscript><p class="notice">JavaScript is required to connect to the local analysis server.</p></noscript>
 </body>
 </html>

@@ -85,12 +85,13 @@ For a strong cybersecurity-track submission, assume reviewers will look for:
 |---|---|
 | Working local prototype | Loopback browser workbench; discovery, async jobs, live logs |
 | Real static analysis | `file`, `readelf`, `objdump`, `strings`, `nm`, Ghidra headless |
+| Exploit-mitigation checks | ELF NX/DEP, PIE/ASLR, RELRO, canary, FORTIFY; PE ASLR/DEP/CFG and security-cookie evidence |
 | Linux and Windows formats | ELF and PE metadata/discovery; PE analysis path added for the team edition |
 | Evidence trail | `runs/<job_id>/` snapshots, tool logs, JSON reports, hashes |
-| Before/after comparison | Symbol removal, demo constant blinding, binary metadata hygiene |
-| Safety model | No target execution; loopback only; token-protected state changes; sample-only source transforms |
+| Before/after comparison | Symbol removal, demo constant blinding, OLLVM source obfuscation, binary metadata hygiene |
+| Safety model | No target execution on the host; loopback only; token-protected state changes; sample-only source transforms; OLLVM behaviour drivers run only in a QEMU micro-VM with no disk/network |
 | Documentation | Report, plan, architecture/pipeline diagrams, UI evidence, SAST baselines |
-| Testing | 98 automated tests; Fedora: 98 with 1 skip when Ghidra is enabled; GitHub Actions Windows and Fedora jobs pass; platform-specific skips are visible |
+| Testing | Earlier prototype: 105 automated tests. Current unmerged Day 4 branch must use `docs/evidence/verification.json` once regenerated. Earlier merged-baseline Windows/Fedora CI jobs do not verify this branch; clean native-Windows manual acceptance remains outstanding. |
 
 ### Gaps that must be closed before submission
 
@@ -105,16 +106,22 @@ For a strong cybersecurity-track submission, assume reviewers will look for:
 | 7 | Video and screenshots | Required supporting evidence; remote reviewers | Faisal / Day 4 |
 | 8 | Packaging and checksums | Reviewers/team must reproduce the run | Faisal / Day 4 |
 | 9 | Registration and team data | Hard deadline 12 November | Naser draft; Faisal submit |
-| 10 | Claims discipline | Demo protection is not real obfuscation | Everyone |
+| 10 | Claims discipline | OLLVM is a real transformation but not a security proof; demo blinding remains demonstration-only | Everyone |
 
 ### What ReverseShield must not claim
 
 - It is **not** a malware sandbox, antivirus, EDR or dynamic analysis platform.
-- It does **not** execute or detonate targets.
-- The source transformer is **demonstration-only**; `behavior_verified: false`.
+- It does **not** execute installed or third-party targets on the host. The optional
+  OLLVM sample check runs only deterministic drivers inside a QEMU micro-VM with
+  no disk and no network.
+- The demo constant-blinding transformer is **demonstration-only**. OLLVM is a
+  real source transformation, but it is not a security proof and its QEMU check
+  covers only deterministic test vectors.
 - Binary hygiene removes metadata; it is **not** a binary rewriter, packer,
   virtualiser or anti-tamper product.
 - A changed file size or missing symbols is **not** a security score.
+- A present mitigation is not a security guarantee; an absent mitigation is not
+  proof of exploitability.
 - No claim of “unbypassable”, “military-grade” or “certified” protection.
 
 ## 5. Positioning for the cybersecurity track
@@ -133,17 +140,17 @@ before/after comparison of copy-only transformations, with explicit limits.
 increasing; teams need a lightweight pre-release check, not a heavyweight
 reverse-engineering platform.
 
-**Differentiation:** local-first, no target execution, no cloud upload, evidence
-rather than a score, Windows/Linux team workflow, transparent limitations.
+**Differentiation:** local-first, host targets never executed, optional QEMU
+sample-behaviour check, no cloud upload, evidence rather than a score,
+Windows/Linux team workflow, transparent limitations.
 
 **Impact:** helps developers prioritise release hygiene (debug info, symbols,
 paths, exposed constants) before distribution.
 
-**Roadmap:** hardening checks (PIE/NX/RELRO/canary/FORTIFY; ASLR/DEP/CFG),
-known-vulnerable component lookup (offline CVE matching, shown as "possible
-match — verify"), more formats (Mach-O, APK, DEB), sanitized evidence packs,
-CI integration, and a validated protection profile. Details:
-`docs/ROADMAP.md`.
+**Roadmap:** Basic static hardening checks (ELF NX/PIE/RELRO/canary/FORTIFY
+and PE ASLR/DEP/CFG) are implemented, but expanded checks remain planned.
+Offline CVE lookup, more formats (Mach-O, APK, DEB), broader behavior
+validation and CI integration are future work. Details: `docs/ROADMAP.md`.
 
 ## 6. Three-minute demo script
 
@@ -153,12 +160,14 @@ CI integration, and a validated protection profile. Details:
 | 0:20–0:40 | Operate → Level 5 | “I select a bundled sample; nothing is executed.” |
 | 0:40–1:20 | Live analysis | “Six static tools; Ghidra recovers functions and call edges; every event is recorded.” |
 | 1:20–1:50 | Compare → symbol removal | “We copy the sample, remove symbols/debug metadata, reanalyse, and compare.” |
-| 1:50–2:20 | Compare → demo blinding | “A demonstration-grade source transform changes constants and adds a guard; Ghidra can still recover the policy, so we do not call this real protection.” |
-| 2:20–2:40 | Report / limitations | “Evidence, hashes, limitations, no target execution.” |
-| 2:40–3:00 | Close | “Windows and Linux, local-first, built by a four-person team; next step is CI and broader formats.” |
+| 1:50–2:25 | Compare → OLLVM | “The optional Linux-only workflow rebuilds copies of five self-authored samples. Their deterministic QEMU driver transcripts matched; this is not general behavioral equivalence.” |
+| 2:25–2:40 | Report / limitations | “Evidence, hashes, and limits: this raises analysis cost, but it is not a security proof.” |
+| 2:40–3:00 | Close | “Static ELF/PE analysis on Fedora is demonstrated here. Native Windows acceptance is still pending; the OLLVM/QEMU optional workflow is Linux-only.” |
 
-Record at 1080p, no notifications, no personal paths, no terminal secrets. Use a
-clean Windows machine for at least half the footage and Fedora for the rest.
+This table is a **historical outline, not the finished Day 4 video**. The new
+silent-captioned draft and separate narration script are local review artifacts;
+any Windows screen recording must wait for a genuine clean-machine run. Never
+substitute mock UI, personal paths or an unverified claim for footage.
 
 ## 7. Ten-slide pitch outline
 

@@ -3,7 +3,7 @@
 Inputs are same-origin loopback JSON or bounded upload bytes; outputs are
 discovery selections, job events and report/artifact downloads. All API
 routes require the per-session token. Uploads are written to run-local input
-workspaces and never executed. Add routes with the same authorization checks,
+workspaces and never executed on the host. The optional OLLVM profile uses a QEMU micro-VM for deterministic sample drivers. Add routes with the same authorization checks,
 format validation and run-local storage boundary.
 """
 import json
@@ -26,8 +26,16 @@ DEMO_SAMPLE_ID = 'level-5'
 UPLOAD_LIMIT = 256 * 1024 * 1024
 
 
+def _ollvm_available():
+    try:
+        from ollvm_protection import available
+        return bool(available(ROOT))
+    except Exception:
+        return False
+
+
 class UpgradeApiMixin:
-    server_version = 'ReverseShieldLocalDemo/0.4.0-team'
+    server_version = 'ReverseShieldLocalDemo/0.5.0-team'
 
     def setup(self):
         super().setup()
@@ -132,12 +140,16 @@ class UpgradeApiMixin:
                 self._send((ROOT / 'static' / path.rsplit('/', 1)[-1]).read_bytes(), assets[path])
             elif path == '/api/status':
                 tools = self.service.inventory()
-                self._json({'application': 'ReverseShield Local Workbench', 'version': '0.4.0-team',
+                self._json({'application': 'ReverseShield Local Workbench', 'version': '0.5.0-team',
                             'mode': 'static_only', 'tools': tools,
                             'dynamic_analysis': {'enabled': False, 'state': 'disabled_future_extension'},
                             'protection': {'available': bool(shutil.which('strip')), 'tool': 'GNU strip', 'scope': 'bundled_samples_only', 'obfuscation': False,
                                            'binary_hygiene': bool(shutil.which('strip') and shutil.which('objcopy')),
-                                           'binary_scope': 'one_selected_elf_or_pe_copy'},
+                                           'binary_scope': 'one_selected_elf_or_pe_copy',
+                                           'ollvm': {'available': _ollvm_available(), 'tool': 'xollvm',
+                                                     'scope': 'bundled_sample_sources_only',
+                                                     'method': 'control-flow + string obfuscation',
+                                                     'behavior': 'qemu_microvm_no_network'}},
                             'package_formats': {'ELF': 'supported', 'PE': 'supported', 'RPM': 'supported' if os.name != 'nt' else 'unsupported_on_windows', 'DEB': 'unsupported', 'APK': 'unsupported'},
                             'platform': 'windows' if os.name == 'nt' else 'linux',
                             'ghidra': {'large_target_bytes': LARGE_TARGET_BYTES, 'default_timeout_seconds': GHIDRA_TIMEOUT,

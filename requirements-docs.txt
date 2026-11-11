@@ -1,0 +1,8 @@
+# Optional Day 4 document and demo-test dependencies; not app requirements.
+# Install into the interpreter running tests (required on native Windows):
+#   python -m pip install -r requirements-docs.txt
+# POSIX document tests may discover an existing python-docx-capable interpreter.
+# Missing optional dependencies skip the affected tests with an explicit reason;
+# broken imports, generation failures and rendering failures remain test errors.
+python-docx
+Pillow

@@ -16,25 +16,29 @@ Linux ELF and Windows PE files. It:
    `strings`, `nm`, Ghidra headless);
 4. streams real tool events to a browser UI;
 5. stores evidence under `runs/<job_id>/`;
-6. compares a copy before/after one of three transformations:
+6. compares a copy before/after one of four transformations:
    - GNU symbol removal (bundled samples only);
    - demo constant blinding + opaque guard (bundled samples only);
+   - OLLVM source obfuscation + QEMU behaviour check (bundled samples only);
    - binary metadata hygiene (any selected ELF/PE copy).
 
 It is **not**:
 
 - a malware sandbox;
-- a production obfuscator;
+- a production protector or a security proof;
 - a reverse-engineering-resistance score;
-- a tool that executes or emulates the selected target.
+- a tool that executes installed or third-party targets on the host.
 
 ## 2. Non-negotiable safety invariants
 
 Any change must preserve these:
 
-- **Never execute the selected target.** No `subprocess` call may launch the
-  target, its libraries, or a transformed copy. Tools read the file as data.
-- **No emulation or dynamic tracing** in the current mode.
+- **Never execute the selected target on the host.** No host `subprocess` call may
+  launch the target, its libraries, or a transformed copy. Tools read the file as
+  data. The only exception is the optional OLLVM profile, which boots a QEMU
+  micro-VM with no disk/network and runs deterministic drivers built from the
+  bundled sample sources. It must never be pointed at an external target.
+- **No host-side emulation or dynamic tracing** in the current mode.
 - **Loopback only.** The HTTP server binds `127.0.0.1`; remote access is out of
   scope.
 - **Session token + same-origin check** protect state-changing API calls.
@@ -64,6 +68,8 @@ Any change must preserve these:
 | `workflow.py` | Selections, async jobs, events, comparison, protections |
 | `demo_protection.py` | Sample-only C source transformer and protected build |
 | `binary_protection.py` | Binary-only metadata hygiene on a copy |
+| `hardening.py` | Static ELF/PE mitigation-property checks; never a safety score |
+| `ollvm_protection.py` / `behavior_qemu.py` | Linux-only, five-original-sample source transforms and bounded guest-driver comparison |
 | `platform_support.py` | Windows/POSIX process, tool discovery and permission helpers |
 | `samples.py` / `build_samples.py` | Bundled sample definitions and builds |
 | `static/` | Browser UI (Operate, Compare, Monitor, Read Me) |
@@ -121,8 +127,21 @@ Terminal states: `completed`, `partial`, `failed`, `cancelled`.
 | `symbol_removal_applied` | `strip_compare` | Sample-only `strip --strip-unneeded` |
 | `demo_obfuscation_applied` | `protect_compare` | Sample-only source transform + rebuild |
 | `binary_metadata_hygiene_applied` | `binary_compare` | Any selected ELF/PE copy; metadata only |
+| `ollvm_obfuscation_applied` | `ollvm_compare` | Bundled sample source only; xollvm rebuild, then QEMU behaviour check |
 
-Always include `behavior_verified: false` and a limitations list.
+`hardening.py` adds static exploit-mitigation properties to every analysis:
+NX/DEP, PIE/ASLR, RELRO, canary, FORTIFY, and PE ASLR/DEP/CFG. These are
+observed properties, never a security score. Add checks in that module rather
+than mixing them into `metrics.py`. `level-5-hardened` is the sixth bundled
+selection and is analysis-only for source transforms; only the original five
+self-authored sample sources may enter the OLLVM/QEMU driver workflow.
+
+Metadata-only transformations include `behavior_verified: false`. OLLVM also
+keeps that field **false**: QEMU tests separately rebuilt driver executables,
+not the downloadable protected ELF. `driver_vectors_matched` records only
+whether those separate deterministic drivers matched; `behavior_scope` is
+`separate_deterministic_drivers`. A failed driver check makes the job `partial`.
+Neither result is full behavioral equivalence.
 
 ## 6. Adding a new analysis tool
 
@@ -149,8 +168,11 @@ Always include `behavior_verified: false` and a limitations list.
 
 ## 8. Windows-specific notes
 
-Windows support is native, not WSL. Current validation is on Windows with
-Python 3.15 and project-local Ghidra 12.2, Temurin JDK 25 and MinGW-w64:
+Native Windows support is implemented in the code, and earlier merged-baseline
+CI jobs ran on Windows; **this unmerged Day 4 candidate has not had a clean
+native-Windows manual acceptance run**. The OLLVM/QEMU workflow is Linux-only.
+The Windows scripts probe compatible Python versions 3.15→3.11 explicitly;
+project-local Ghidra 12.2, JDK 25 and MinGW-w64 are optional downloaded tools.
 
 - `platform_support.py` handles `.exe`/`.bat` lookup, process groups,
   termination and permissions.
@@ -170,8 +192,9 @@ Python 3.15 and project-local Ghidra 12.2, Temurin JDK 25 and MinGW-w64:
   `.dll` by PE signatures and extracts the PE32/PE32+, machine, section and
   entry-point fields. Extension alone never establishes an executable format.
 - Sample files built with MinGW on Windows use `.exe` extensions and are
-  labeled from their parsed file signatures. Bundled Linux ELF fixtures still
-  work on Windows through Ghidra and PE-aware GNU `objdump`.
+  labeled from their parsed file signatures. Bundled Linux ELF fixtures are
+  intended for static Ghidra analysis when Ghidra is installed; confirm this
+  on a clean native-Windows account before claiming acceptance.
 - `tests/test_app_api.py` covers the legacy ELF/Flatpak API and is skipped on
   Windows; Windows acceptance uses the upgraded token-protected API and PE
   tests. Flatpak, RPM, and POSIX descriptor/permission behavior are Linux-only.
@@ -198,7 +221,11 @@ python3 -m py_compile app.py analysis.py workflow.py engine.py discovery.py metr
 node --check static/workbench.js
 ```
 
-Never add a test that executes a bundled sample or a selected target.
+Do not add any test that executes an installed application or selected
+external target. The only permitted behavior probe runs deterministic drivers
+from the five original self-authored samples inside a no-disk/no-network QEMU
+guest; never run those sample executables on the host. The sixth hardened ELF
+is analysis-only.
 
 ## 10. Common pitfalls
 

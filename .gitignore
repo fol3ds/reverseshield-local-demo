@@ -14,6 +14,8 @@ venv/
 # Local archives and editor files.
 *.zip
 ReverseShield_Lite_Windows_Day1.zip.sha256
+*.sha256
+*.log
 *.7z
 .DS_Store
 Thumbs.db
@@ -27,6 +29,18 @@ docs/ReverseShield_3-Day_Execution_Plan.docx
 docs/ReverseShield_3-Day_Execution_Plan.pdf
 docs/ReverseShield_Project_Report_and_Plan.docx
 docs/ReverseShield_Project_Report_and_Plan.pdf
+
+# Local Day 4 candidate artifacts: inspect before sharing, never stage by default.
+dist/
+docs/demo/*.mp4
+docs/demo/frames/
+docs/document-review/
+docs/ReverseShield_Day4_*.docx
+docs/ReverseShield_Day4_*.pdf
+docs/ReverseShield_IS_CyberNext_Deck_DRAFT_v0.5.0.*
+docs/ReverseShield_Full_Project_Report_DRAFT_v0.5.0.*
+.scratch-ollvm/
+brave-project-window.png
 
 # Local secrets and credentials
 .env

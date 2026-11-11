@@ -86,6 +86,22 @@ class ApiSecurityTests(unittest.TestCase):
         conn.close()
         return result
 
+    def test_http_analyze_refuses_transform_profile_before_job_creation(self):
+        target = ROOT / 'samples/bin/level-1.elf'
+        selection = self.server.workbench.add_selection({'app': {'name': 'external'}, 'targets': [
+            {'target_id': 'profile-test', 'absolute_path': str(target),
+             'relative_path': target.name, 'analyzable': True}
+        ]})
+        before = set(self.server.workbench.jobs)
+        for profile in ('symbol_removal', 'constant_blinding', 'ollvm_source', 'binary_hygiene'):
+            payload = {'selection_id': selection['selection_id'], 'target_ids': ['profile-test'],
+                       'tools': ['readelf'], 'authorized': True,
+                       'operation': 'analyze', 'profile': profile}
+            status, body, _ = self.request('POST', '/api/jobs', json.dumps(payload).encode())
+            self.assertEqual(status, 400)
+            self.assertIn('Invalid request', json.loads(body)['error'])
+        self.assertEqual(set(self.server.workbench.jobs), before)
+
     def test_every_api_read_and_write_needs_token(self):
         for method, path in [('GET', '/api/status'), ('GET', '/api/jobs'),
                              ('GET', '/api/samples'), ('POST', '/api/discover'),

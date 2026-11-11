@@ -16,6 +16,7 @@ import tempfile
 
 from analysis import detect_format, has_elf_magic, parse_elf_header, parse_pe_header, parse_sections
 from metrics import content_metrics
+from hardening import analyze_hardening
 from platform_support import IS_WINDOWS, command_for, local_tool_dirs, popen_kwargs, terminate_tree, which_tool
 import os
 from pathlib import Path
@@ -553,11 +554,19 @@ def analyze(path, *, tools=None, emit=None, workdir=None, cancel_event=None, opt
     content["symbols"].update({**tool_counts, "merged_symbol_entries": len(result["artifacts"]["symbols"])})
     content["ghidra"] = ghidra_summary
     result["content_metrics"] = content
+    try:
+        result["hardening"] = analyze_hardening(target)
+    except Exception as exc:
+        result["hardening"] = {"format": file_format, "checks": {}, "summary": {},
+                               "errors": [f"Hardening check failed: {exc}"],
+                               "limitations": ["Hardening properties were not collected."]}
     result["coverage"].update(_coverage_summary(result["tools"], available, selected))
     if emit:
         emit({"type": "artifact", "tool": "metrics", "message": "Computed content metrics from file bytes",
               "counts": {"sections": content["sections"]["count"], "imports": content["imports"]["count"],
                          "exports": content["exports"]["count"], "strings": content["strings"]["total"]}})
+        emit({"type": "artifact", "tool": "hardening", "message": "Computed static exploit-mitigation properties",
+              "counts": result["hardening"].get("summary", {})})
     return result
 
 
