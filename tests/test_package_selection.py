@@ -66,7 +66,7 @@ class PackageSelectionTests(unittest.TestCase):
             (root / 'samples/bin').mkdir(parents=True)
             (root / 'samples/bin/fixture.elf').write_bytes(b'ELF fixture')
             subprocess.run(['git', '-C', str(root), 'add', 'README.md', 'samples/bin/fixture.elf'], check=True)
-            result = sorted(p.relative_to(root).as_posix() for p in source_files(root))
+            result = sorted(p.resolve().relative_to(root.resolve()).as_posix() for p in source_files(root))
             self.assertEqual(result, ['README.md', 'samples/bin/fixture.elf'])
 
     def test_raw_scan_assets_and_video_are_not_source_archive_entries(self):
@@ -89,7 +89,7 @@ class PackageSelectionTests(unittest.TestCase):
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(data)
             subprocess.run(['git', '-C', str(root), 'add', '-f', *files], check=True)
-            result = sorted(p.relative_to(root).as_posix() for p in source_files(root))
+            result = sorted(p.resolve().relative_to(root.resolve()).as_posix() for p in source_files(root))
             self.assertEqual(result, ['README.md',
                                       'docs/evidence/hardening-level5.json'])
 

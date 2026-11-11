@@ -114,10 +114,15 @@ class BundledSamplePrivacyTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name != "nt", "POSIX file modes are not Windows ACLs")
     def test_all_six_bundled_samples_are_private_nonexecutable_files(self):
+        # Builds create 0600 files, but Git only tracks the executable bit, so a
+        # fresh checkout can normalise the mode. The safety property is that the
+        # bundled samples are never executable and remain owner-readable.
         for slug in ALL_SAMPLES:
             with self.subTest(sample=slug):
                 sample = ROOT / "samples/bin" / f"{slug}.elf"
-                self.assertEqual(stat.S_IMODE(sample.stat().st_mode), 0o600)
+                mode = stat.S_IMODE(sample.stat().st_mode)
+                self.assertFalse(mode & 0o111, f"{slug} must not be executable")
+                self.assertTrue(mode & 0o400, f"{slug} must remain owner-readable")
 
     @unittest.skipUnless(READELF, "DWARF inspection requires readelf")
     def test_baselines_keep_dwarf_with_stable_project_relative_source_paths(self):
@@ -179,7 +184,11 @@ class BundledSamplePrivacyTests(unittest.TestCase):
                 self.assertEqual(item["sha256"], hashlib.sha256(data).hexdigest())
                 self.assertEqual(item["bytes"], len(data))
                 if os.name != "nt":
-                    self.assertEqual(item["mode"], oct(stat.S_IMODE(sample.stat().st_mode)))
+                    actual = stat.S_IMODE(sample.stat().st_mode)
+                    recorded = int(item["mode"], 8)
+                    # Git does not preserve 0600; both modes must stay non-executable.
+                    self.assertFalse(actual & 0o111)
+                    self.assertFalse(recorded & 0o111)
                 self.assertEqual(item["hardening"], analyze_hardening(sample))
 
 

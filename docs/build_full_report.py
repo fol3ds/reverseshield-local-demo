@@ -546,7 +546,9 @@ def build(out: Path = OUT, toc_pages: dict[str, str] | None = None) -> Path:
                        ('canary', 'Stack canary'), ('fortify', 'FORTIFY')):
         rows.append((label, checks['level-5'][key].title(), checks['level-5-hardened'][key].title()))
     add_table(doc, rows[0], rows[1:], widths=[55, 55, 55], font_size=9)
-    para(doc, f"Both files are mode 0600 and were never executed on the host. Original: "
+    para(doc, f"Both files were built non-executable (0600 in the build workspace) and were never "
+              f"executed on the host; a fresh Git checkout may normalise the mode, so the enforced "
+              f"safety property is non-executable. Original: "
               f"{samples['level-5']['bytes']:,} bytes, SHA-256 `{samples['level-5']['sha256'][:16]}…`. "
               f"Hardened: {samples['level-5-hardened']['bytes']:,} bytes, SHA-256 "
               f"`{samples['level-5-hardened']['sha256'][:16]}…`. Full hashes are in Appendix B.")

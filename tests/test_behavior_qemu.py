@@ -41,8 +41,8 @@ class RuntimeLibrarySafetyTests(unittest.TestCase):
             inspected = []
 
             def inspect(command, **kwargs):
-                self.assertEqual(Path(command[0]).name, 'readelf')
                 self.assertFalse(kwargs.get('shell', False))
+                self.assertEqual(Path(command[0]).stem.lower(), 'readelf')
                 path = Path(command[-1])
                 inspected.append(path)
                 return subprocess.CompletedProcess(command, 0, stdout=metadata[path], stderr='')
@@ -69,7 +69,7 @@ class RuntimeLibrarySafetyTests(unittest.TestCase):
             def inspect(command, **kwargs):
                 calls.append((command, kwargs))
                 self.assertIsInstance(command, (list, tuple))
-                self.assertEqual(Path(command[0]).name, 'readelf',
+                self.assertEqual(Path(command[0]).stem.lower(), 'readelf',
                                  'dependency discovery must never load or run a target')
                 self.assertFalse(kwargs.get('shell', False))
                 self.assertIn('-l', command)
