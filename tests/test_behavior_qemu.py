@@ -55,7 +55,11 @@ class RuntimeLibrarySafetyTests(unittest.TestCase):
             self.assertEqual(copied, {loader.name, libm.name, libc.name})
             self.assertCountEqual(inspected, list(metadata))
             for path in (loader, libm, libc):
-                self.assertEqual((guest / path.relative_to('/')).read_bytes(), path.read_bytes())
+                try:
+                    relative = path.relative_to('/')
+                except ValueError:
+                    relative = Path(path.name)
+                self.assertEqual((guest / relative).read_bytes(), path.read_bytes())
 
     def test_dependency_discovery_only_inspects_elf_with_readelf(self):
         with tempfile.TemporaryDirectory() as temp:
