@@ -197,7 +197,14 @@ def _copy_runtime_libs(binary: Path, root: Path) -> None:
         for source in candidates:
             if not source.is_file():
                 raise OllvmBuildError("A required guest runtime library is unavailable.")
-            destination = root / source.relative_to("/")
+            try:
+                relative = source.relative_to("/")
+            except ValueError:
+                # Windows test paths have no POSIX guest root; names are unique
+                # for the supported runtime libraries and this branch is unused
+                # by the Linux-only QEMU workflow.
+                relative = Path(source.name)
+            destination = root / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             if not destination.exists():
                 shutil.copy2(source, destination)
