@@ -46,6 +46,14 @@ def load(name: str) -> dict:
 def new_deck() -> Presentation:
     deck = Presentation()
     deck.slide_width, deck.slide_height = W, H
+    props = deck.core_properties
+    props.author = 'ReverseShield Team'
+    props.last_modified_by = 'ReverseShield Team'
+    props.title = 'ReverseShield — IS CyberNext 2026 Deck (DRAFT)'
+    props.subject = 'Reverse-engineering exposure workbench'
+    props.keywords = 'ReverseShield, static analysis, ELF, PE, OLLVM, QEMU'
+    props.comments = 'DRAFT — owner review; not for submission'
+    props.category = 'IS CyberNext 2026'
     return deck
 
 

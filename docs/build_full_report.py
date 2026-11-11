@@ -99,6 +99,14 @@ def build(out: Path = OUT, toc_pages: dict[str, str] | None = None) -> Path:
     samples = {row['sample_id']: row for row in hard['samples']}
 
     doc = setup_document('ReverseShield — Full Project Report', header_right='DRAFT · v0.5.0-team')
+    props = doc.core_properties
+    props.author = 'ReverseShield Team'
+    props.last_modified_by = 'ReverseShield Team'
+    props.title = 'ReverseShield — Full Project Report (DRAFT)'
+    props.subject = 'Reverse-engineering exposure workbench'
+    props.keywords = 'ReverseShield, static analysis, ELF, PE, OLLVM, QEMU, evidence'
+    props.comments = 'DRAFT — owner review; not for submission'
+    props.category = 'IS CyberNext 2026'
     # The shared footer says "submission copy"; this document is explicitly a draft.
     footer = doc.sections[0].footer
     for run in footer.paragraphs[0].runs:
