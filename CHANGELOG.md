@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased — source cleanup
+
+- Removed 45 straightforward internal/team/event files, obsolete generated
+  documents/screenshots and raw historical scanner outputs. A private local
+  archive was verified before removal; Git history was not rewritten.
+- Preserved privacy warnings and open acceptance gates in
+  `docs/RELEASE_CHECKLIST.md`; removed links to retired files from onboarding.
+- Kept conditional AI/security documentation, optional screenshots, document and
+  video tooling, evidence fixtures and functional/security regression tests.
+- Updated Lite selection so retired team/event guides are excluded and the
+  release/privacy checklist is included. No release or visibility change.
+
+Earlier entries below describe historical work, not fresh verification of this
+cleanup. Refer to the exact candidate commit and test output before release.
+
 ## 0.5.0-team — local Day 4 candidate (unmerged, unpublished)
 
 - Six selectable ELF samples: five original source-transformable samples and

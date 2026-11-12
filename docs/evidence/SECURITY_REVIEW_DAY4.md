@@ -8,7 +8,7 @@
 |---|---|---|
 | Python SAST | Bandit **1.9.4** (project-local venv `tools/day4-qa`) | 8,859 LOC scanned; **116 findings: 0 high, 3 medium, 113 low** |
 | Secret scan | detect-secrets **1.5.0** | Findings only in evidence hashes, setup-script checksums and deliberate sanitizer fixtures |
-| ZAP DAST | Not run in this pass | Day 3 ZAP results remain historical evidence for an older tree; see `docs/security/zap-day3.json` |
+| ZAP DAST | Not run in this pass | Day 3 ZAP results describe an older tree; raw output was archived privately during source cleanup |
 | Semgrep | Not installed | Not run; do not describe as current |
 
 ## Disposition of the five notable findings

@@ -38,8 +38,9 @@ selected project documentation/sanitized summaries. It excludes `tools/`,
 `runs/`, `backups/`, `.git/`, Python caches, raw `docs/security/` outputs,
 old `docs/assets/` screenshots, internal `docs/handoff/` and `docs/event/`
 notes, generated PDFs/DOCX and draft MP4s. **Inspect the exact staged index
-and ZIP before sharing.** Neither the ZIP nor its checksum was published by
-this preparation work.
+and ZIP before sharing.** Retired team/event guides are excluded; the preserved
+privacy and acceptance gates are included as `docs/RELEASE_CHECKLIST.md`.
+Neither the ZIP nor its checksum was published by this preparation work.
 
 On native Windows the optional OLLVM/QEMU workflow is unavailable. After
 extracting the candidate into a clean directory, a Windows teammate must run
