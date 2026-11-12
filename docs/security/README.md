@@ -1,7 +1,10 @@
 # Day 3 security evidence — 11 November 2026
 
-This supersedes the historical baseline counts. Scope: delivered source tree;
-the ZIP has no Git history, so this is not a full repository-history audit.
+Historical record of the delivered Day 3 source tree, not a fresh audit of the
+cleaned repository. Raw scanner/test exports were archived privately and are
+no longer shipped; the historical counts below were not regenerated during
+source cleanup. The original review did not cover Git history. See
+`../RELEASE_CHECKLIST.md` for preserved privacy and acceptance gates.
 
 | Check | Observed result | Disposition |
 |---|---|---|
@@ -15,7 +18,7 @@ The earlier ZAP pass found missing CSP form-action, unnecessary inline-style
 permission and server version disclosure. The final pass verifies their fixes.
 Informational findings: Modern Web Application (one) and Suspicious Comments
 (three). Public source comments describe behavior; no secret values are needed
-in those comments. These alerts are retained in the exported report.
+in those comments. These alerts were retained in the historical exported report, now archived.
 
 ## Reproduction
 
@@ -48,7 +51,8 @@ earlier zero-finding scan as the final result.
 
 ## Finding-by-finding triage policy
 
-All Bandit findings remain in `bandit-day3.json`, with file/line references.
+Detailed Bandit findings and file/line references were preserved in the private
+archive rather than shipped in the product source.
 B404 (11) flags subprocess imports; B603 (14) flags argv tool launches;
 B607 (3) flags document-builder tool names resolved through PATH. These call
 trusted compilers/static analyzers, document tools or the operator-selected

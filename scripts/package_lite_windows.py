@@ -33,7 +33,7 @@ EXCLUDED_FILES = {
 ALLOWED_DOCS = {
     "docs/ai_context.md", "docs/build_plan.py", "docs/build_report.py",
     "docs/build_day4_documents.py", "docs/docx_helpers.py", "docs/finalize_tocs.py",
-    "docs/github_workflow.md", "docs/is_cybernext_requirements.md",
+    "docs/release_checklist.md",
     "docs/roadmap.md", "docs/evidence/hardening-level5.json",
     "docs/evidence/ollvm-five-qemu.json", "docs/evidence/verification.json",
     "docs/evidence/security-day4.json", "docs/evidence/security_review_day4.md",

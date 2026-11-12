@@ -89,9 +89,7 @@ steps 1–3 below for you and opens the report.
 | `samples/` | self-authored C sources and built samples |
 | `runs/` | per-job snapshots, logs, reports (do not commit) |
 | `tools/` | project-local Ghidra/JDK/etc. (do not commit) |
-| `docs/TEAM_TASKS_DAY1-4.md` | Naser → Zayed → Nomai → Faisal hand-off |
-| `docs/GITHUB_WORKFLOW.md` | beginner Git/GitHub Desktop workflow |
-| `docs/IS_CYBERNEXT_REQUIREMENTS.md` | event requirements and gap analysis |
+| `docs/RELEASE_CHECKLIST.md` | privacy review, platform acceptance and publication gates |
 | `docs/AI_CONTEXT.md` | architecture and safety rules for AI agents |
 
 ## Troubleshooting
@@ -148,6 +146,6 @@ Offline export (refuses to overwrite the source or an existing destination):
 python sanitize_report.py runs/JOB_ID/report.json sanitized-report.json
 ```
 
-Day 3 verification and unresolved release gates are recorded in
-`docs/handoff/DAY3.md`. Older PDF/DOCX reports and Day 2 screenshots describe
-earlier builds; use the Day 3 evidence for current security claims.
+Unresolved acceptance and publication gates are preserved in
+`docs/RELEASE_CHECKLIST.md`. Historical results are not a fresh test of a later
+cleaned tree, and source cleanup does not clear older Git history for sharing.

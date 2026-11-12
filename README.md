@@ -140,7 +140,7 @@ analysis, not a source transform. OLLVM cannot transform an arbitrary ELF/PE.
 
 Press **Run demo · Level 5** on the Operate page. It selects the bundled Level 5
 sample, runs every available tool and opens the report. It never runs on page
-load. The 3-minute event script is in `docs/event/PITCH_DECK_DRAFT.md`.
+load.
 
 ## Scope and safety
 
@@ -198,15 +198,10 @@ RUN_GHIDRA_TESTS=1 python3 -m unittest tests.test_engine -v
 |---|---|
 | `START_HERE.md` | Windows/Linux setup and first run |
 | `docs/AI_CONTEXT.md` | Architecture, invariants, extension guide for AI agents |
-| `docs/TEAM_TASKS_DAY1-4.md` | Naser → Zayed → Nomai → Faisal task plan |
-| `docs/GITHUB_WORKFLOW.md` | Beginner GitHub Desktop hand-off |
-| `docs/IS_CYBERNEXT_REQUIREMENTS.md` | Event requirements, positioning, gap analysis |
-| `docs/event/PITCH_DECK_DRAFT.md` | Day 2 pitch deck draft and 3-minute demo script |
 | `docs/security/DAY2_SECURITY_REVIEW.md` | Day 2 security review: findings, CWE/CVE, mitigations |
-| `docs/handoff/DAY2.md` | Day 2 hand-off (Zayed → Nomai) |
 | `docs/ROADMAP.md` | Planned features (hardening checks, CVE lookup) — not built yet |
-| `docs/ReverseShield_Project_Report_and_Plan.pdf` | Project report and plan |
-| `docs/ReverseShield_3-Day_Execution_Plan.pdf` | Earlier three-day plan |
+| `docs/RELEASE_CHECKLIST.md` | Preserved privacy warnings, acceptance gaps and publication gates |
+| `docs/evidence/ACCEPTANCE_MATRIX_DAY4.md` | Scoped platform evidence and outstanding manual checks |
 
 ## Version
 
@@ -246,6 +241,7 @@ Offline export (refuses to overwrite the source or an existing destination):
 python sanitize_report.py runs/JOB_ID/report.json sanitized-report.json
 ```
 
-Day 3 verification and unresolved release gates are recorded in
-`docs/handoff/DAY3.md`. Older PDF/DOCX reports and Day 2 screenshots describe
-earlier builds; use the Day 3 evidence for current security claims.
+Unresolved acceptance and publication gates are preserved in
+`docs/RELEASE_CHECKLIST.md`. Internal handoffs, draft reports and obsolete
+screenshots are no longer shipped. Retained historical evidence is not fresh
+verification of a later cleaned commit.

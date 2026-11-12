@@ -93,6 +93,29 @@ class PackageSelectionTests(unittest.TestCase):
             self.assertEqual(result, ['README.md',
                                       'docs/evidence/hardening-level5.json'])
 
+    def test_retired_team_notes_are_excluded_but_retained_guides_are_packaged(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            subprocess.run(['git', 'init', '-q', str(root)], check=True)
+            files = {
+                'README.md': b'public setup',
+                'docs/AI_CONTEXT.md': b'retained architecture and safety guidance',
+                'docs/RELEASE_CHECKLIST.md': b'preserved privacy and acceptance gates',
+                'docs/GITHUB_WORKFLOW.md': b'retired team handoff',
+                'docs/IS_CYBERNEXT_REQUIREMENTS.md': b'retired event planning',
+                'docs/NASER_AGENT_PROMPT.md': b'retired agent prompt',
+                'docs/TEAM_TASKS_DAY1-4.md': b'retired team assignments',
+            }
+            for name, data in files.items():
+                path = root / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(data)
+            subprocess.run(['git', '-C', str(root), 'add', *files], check=True)
+            selected = sorted(path.resolve().relative_to(root.resolve()).as_posix()
+                              for path in source_files(root))
+            self.assertEqual(selected, ['README.md', 'docs/AI_CONTEXT.md',
+                                        'docs/RELEASE_CHECKLIST.md'])
+
     def test_tracked_symlink_is_not_followed(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
