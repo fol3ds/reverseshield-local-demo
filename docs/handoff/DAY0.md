@@ -37,6 +37,6 @@ node --check static/workbench.js
 - Jobs are in memory; `runs/<job_id>/report.json` survives a restart.
 - Reports can contain local paths; sanitizer is a Day 3 task.
 
-## First action for Naser.
+## First action for Naser
 
 Pull `main`, run `setup.bat` and `run.bat` on Windows, then start D1-01.
