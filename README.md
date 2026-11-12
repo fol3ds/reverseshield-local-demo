@@ -207,6 +207,15 @@ RUN_GHIDRA_TESTS=1 python3 -m unittest tests.test_engine -v
 
 `0.5.0-team` — see `CHANGELOG.md`.
 
+## License
+
+The original ReverseShield project code and self-authored samples are licensed
+under the **MIT License**. See `LICENSE` for the complete terms and copyright
+attribution to Faisal Alqhtani, Nasser Alsulami, Zayed Alenazi, and Numay Aljoudi.
+
+Third-party tools and dependencies retain their own licenses; the MIT license
+does not replace those terms. See `THIRD_PARTY_NOTICES.md`.
+
 
 ## Day 3 privacy and sharing
 

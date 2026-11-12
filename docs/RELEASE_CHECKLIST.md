@@ -18,8 +18,10 @@ verification of a later commit.
 - [ ] Exclude raw `runs/`, downloaded `tools/`, backups, credentials, tokens,
   personal paths and demonstration keys from shared artifacts. Sanitized report
   exports still require human review; changed binaries are not sanitized reports.
-- [ ] Choose the intended project license and review third-party attribution and
-  redistribution terms. Keep `THIRD_PARTY_NOTICES.md` with the source.
+- [x] Select the project license: MIT, with the owner's confirmation that all four
+  contributors agree. Copyright holders are listed in the root `LICENSE` file.
+- [ ] Review third-party attribution and redistribution terms separately. Keep
+  `THIRD_PARTY_NOTICES.md` with the source; upstream licenses remain unchanged.
 - [ ] Confirm the intended commit, version and release assets. The historical
   `v0.4.0-team` draft is not approval of newer source or evidence. Do not publish,
   rewrite history, submit event materials or change visibility without the owner's
